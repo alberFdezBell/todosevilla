@@ -72,8 +72,12 @@ services:
     image: ghcr.io/alberfdezbell/todosevilla-proxy:latest
     container_name: todosevilla_proxy
     ports:
-      # Expone el panel solo en el puerto 8080 para toda la red local
-      - "8080:443"
+      # Exposición local del panel (https://192.168.0.60:8080). Se publica con
+      # mode: host (sin routing mesh / ingress) para que sea compatible con
+      # endpoint_mode: dnsrr y no dependa del IPVS (roto en LXC de Proxmox).
+      - mode: host
+        target: 443
+        published: 8080
     environment:
       # CN para el certificado autofirmado generado en el arranque
       PROXY_CERT_CN: ${PROXY_CERT_CN:-192.168.0.60}
@@ -83,6 +87,11 @@ services:
     networks:
       - todosevilla_net
     deploy:
+      # dnsrr: el DNS devuelve la IP real de la tarea (sin VIP). Es la misma
+      # solución que db y app para evitar el IPVS en LXC de Proxmox. Necesario
+      # para que cloudflared (http://proxy:80) y nginx conecten directamente
+      # y no se queden en i/o timeout contra el VIP.
+      endpoint_mode: dnsrr
       restart_policy:
         condition: on-failure
     depends_on:
