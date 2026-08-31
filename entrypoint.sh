@@ -98,8 +98,11 @@ if [ "$LOCKED" = "t" ]; then
     fi
 
     # Ejecutar las migraciones (Prisma usa $DATABASE_URL original con ?schema=public)
+    # Se invoca el CLI directamente (node .../prisma/build/index.js) porque el
+    # runner standalone no incluye node_modules/.bin/prisma y npx intentaría
+    # descargarlo de internet en tiempo de ejecución.
     echo "Ejecutando migraciones de Prisma..."
-    if npx prisma migrate deploy; then
+    if node ./node_modules/prisma/build/index.js migrate deploy; then
       echo "Migraciones aplicadas con éxito."
     else
       echo "ERROR: Las migraciones de base de datos han fallado. Abortando despliegue."

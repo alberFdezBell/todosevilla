@@ -29,8 +29,9 @@ todo castilblanco/
 │   └── workflows/
 │       └── docker-build.yml        # CI/CD: build + push a GHCR al push en main
 ├── nginx/
-│   ├── nginx.conf                  # Proxy inverso HTTPS para panel local
-│   └── certs/                      # Certificados SSL autofirmados (generados en arranque)
+│   ├── nginx.conf                  # Configuración del proxy (resolver dinámico Swarm)
+│   ├── Dockerfile                  # Imagen todosevilla-proxy (nginx + OpenSSL)
+│   └── proxy-entrypoint.sh         # Genera los certs autofirmados en el arranque
 ├── prisma/
 │   ├── schema.prisma               # Esquema de base de datos (fuente de verdad)
 │   ├── seed.js                     # Datos iniciales: admin + documentos legales
@@ -252,3 +253,4 @@ El panel en `/panel` está protegido por una **barrera física de red en Nginx**
 11. **`?schema=public` solo lo entiende Prisma**: las herramientas `libpq` (`pg_isready`, `psql`, `pg_dump`) fallan con `invalid URI query parameter`. El `entrypoint.sh` deriva `LIBPQ_URL` quitando la query string con `cut -d'?' -f1` y usa esa URL para todo lo que no sea Prisma. No devolver el `?schema=public` a esas llamadas.
 12. **`nginx.conf` resuelve `app` en runtime**: se usa `resolver 127.0.0.11` + `proxy_pass` con variable (`set $app_upstream`) porque con `endpoint_mode: dnsrr` el DNS de Swarm solo publica el nombre del servicio cuando tiene tareas vivas. No volver al `proxy_pass http://app:3000;` literal sin resolver, o nginx abortará con `host not found in upstream` en arranques en caliente.
 13. **`GIT_COMMIT_SHA` no tiene que redefinirse en el compose**: la variable se inyecta como ENV en la imagen durante el build (ARG GIT_COMMIT_SHA desde GitHub Actions). Definirla en el stack de Portainer (aunque sea vacía) sobrescribe el valor de la imagen y rompe el comparador de actualizaciones del panel.
+14. **Imagen propia del proxy (`todosevilla-proxy`)**: el servicio `proxy` ya NO monta `nginx.conf` ni certificados desde el host (`/opt/todosevilla/nginx`). Usa una imagen propia construida desde `nginx/` (Dockerfile + `proxy-entrypoint.sh`) que incluye el `nginx.conf` con resolver dinámico y genera certificados autofirmados en el arranque (persistidos en el volumen `proxy_certs`). No volver a bind-mount la configuración del host: reintroduce los fallos `host not found in upstream` e `Is a directory`.

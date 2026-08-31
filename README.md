@@ -25,6 +25,8 @@ curl -fsSL https://raw.githubusercontent.com/alberFdezBell/todosevilla/main/inic
 
 Para una guía paso a paso detallada (incluyendo preparación de VM, Cloudflare Tunnel y Webhooks de Portainer), consulta el manual de **[INICIAR.md](file:///c:/Users/alber/Desktop/todo%20castilblanco/INICIAR.md)**.
 
+> ℹ️ **Proxy autosuficiente**: el servicio `proxy` usa la imagen `ghcr.io/alberfdezbell/todosevilla-proxy` (construida desde `nginx/`), que incluye la configuración de Nginx corregida (resolver dinámico de Swarm) y **genera sus propios certificados SSL autofirmados en el arranque** si no existen (guardados en el volumen `proxy_certs`). Ya **no depende** del `nginx.conf` ni de los certificados que `iniciar_produccion.sh` creaba en `/opt/todosevilla/nginx/`. Para regenerar los certificados manualmente: `docker volume rm todosevilla_proxy_certs` (con el stack detenido o tras re-desplegar) y vuelve a desplegar.
+
 ---
 
 ## Inicio Rápido — Entorno de Desarrollo (Windows)
@@ -271,9 +273,9 @@ El mensaje es genérico; hay que mirar los logs del task fallido: `docker servic
 | Error en los logs | Causa raíz | Solución |
 |---|---|---|
 | `pg_isready: error: invalid URI query parameter: "schema"` | `pg_isready`/`psql`/`pg_dump` (libpq) no aceptan el parámetro `?schema=public` (es exclusivo del driver de Prisma) | Ya corregido en `entrypoint.sh`: deriva una URL `libpq-safe` con `cut -d'?' -f1` para todas las herramientas libpq. Reconstruir la imagen (push a main). |
-| `host not found in upstream "app"` (nginx) | Con `endpoint_mode: dnsrr`, el DNS de Swarm no publica el nombre `app` hasta que el servicio tiene tareas vivas; nginx resolvía el upstream al arrancar sin variable | Ya corregido en `nginx/nginx.conf`: `resolver 127.0.0.11` + `proxy_pass` con variable (`set $app_upstream`). Reconstruir y redesplegar, o volcar el `nginx.conf` en el host en `/opt/todosevilla/nginx/nginx.conf`. |
+| `host not found in upstream "app"` (nginx) | Con `endpoint_mode: dnsrr`, el DNS de Swarm no publica el nombre `app` hasta que el servicio tiene tareas vivas; nginx resolvía el upstream al arrancar sin variable | Corregido de forma permanente en la imagen `todosevilla-proxy` (lleva su propio `nginx.conf` con `resolver 127.0.0.11` + `proxy_pass` con variable). Actualiza el stack a la imagen nueva. |
 | `ERROR CRÍTICO DE SEGURIDAD: Las variables de entorno ADMIN_EMAIL y ADMIN_PASSWORD...` | `ADMIN_EMAIL`/`ADMIN_PASSWORD` vacías en el stack de Portainer | Definir las variables en el Stack de Portainer → Environment variables. La de `JWT_SECRET` también. |
-| `cannot load certificate key /etc/nginx/certs/server.key` o `Is a directory` | Faltan los certificados o el `nginx.conf` en `/opt/todosevilla/nginx/` del host | Ejecutar el paso 6 de `iniciar_produccion.sh` (genera los certs con OpenSSL) y copiar `nginx/nginx.conf`. |
+| `cannot load certificate key /etc/nginx/certs/server.key` o `Is a directory` | Faltan los certificados o el `nginx.conf` en `/opt/todosevilla/nginx/` del host | Ya no aplica: la imagen `todosevilla-proxy` genera sus propios certificados autofirmados en el arranque. Solo aparece si el stack sigue usando el compose antiguo con los mounts del host. |
 | Error de módulo nativo (`bcrypt`/Prisma `was compiled against a different platform`) | Imagen construida desde Windows copiando `node_modules` | Con el nuevo `.dockerignore` ya no ocurre; reconstruir desde GitHub Actions (Linux). |
 
 > ℹ️ Después de estos cambios hay que **reconstruir la imagen** (push a `main` → GitHub Actions publica `ghcr.io/alberfdezbell/todosevilla:latest`) y **redesplegar el stack**, porque el `entrypoint.sh` y el `nginx.conf` viven dentro de la imagen/contenedor.

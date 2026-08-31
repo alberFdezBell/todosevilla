@@ -83,8 +83,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "71737e202b938509",
@@ -191,19 +190,19 @@
   },
   "active": "bc7fba1702a2b010",
   "lastOpenFiles": [
-    "iniciar_produccion.sh",
-    "AGENTS.md",
-    "src/app/panel/PasswordChangeRequired.tsx",
-    "src/app/api/auth/change-password/route.ts",
-    "src/app/api/auth/change-password",
-    "prisma/migrations/20260831000001_add_must_change_password/migration.sql",
-    "prisma/migrations/20260831000001_add_must_change_password",
-    "prisma/migrations/20260831000000_init/migration.sql",
-    "prisma/migrations/20260831000000_init",
-    "prisma/migrations",
+    "nginx/proxy-entrypoint.sh",
+    "nginx/Dockerfile",
     "README.md",
     "INICIAR.md",
+    "tsconfig.json",
+    "tailwind.config.ts",
+    "postcss.config.mjs",
+    "package-lock.json",
+    "package.json",
     "next-env.d.ts",
-    "package-lock.json"
+    "next.config.js",
+    "iniciar_produccion.sh",
+    "entrypoint.sh",
+    "AGENTS.md"
   ]
 }

@@ -42,6 +42,12 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
+# CLI de Prisma para ejecutar las migraciones en el arranque (entrypoint.sh).
+# El runner standalone de Next.js NO incluye node_modules/.bin/prisma; sin esta
+# copia, npx intentaría descargar el CLI desde internet en tiempo de ejecución.
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
 # Copiar el script de inicio y darle permisos de ejecución
 COPY entrypoint.sh ./entrypoint.sh
 RUN dos2unix ./entrypoint.sh && chmod +x ./entrypoint.sh

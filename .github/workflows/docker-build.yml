@@ -32,7 +32,7 @@ jobs:
       - name: Configurar Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Compilar y publicar imagen Docker
+      - name: Compilar y publicar imagen Docker (app)
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -45,5 +45,16 @@ jobs:
           build-args: |
             GIT_COMMIT_SHA=${{ github.sha }}
           # Caché de capas para acelerar builds sucesivos
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Compilar y publicar imagen Docker (proxy)
+        uses: docker/build-push-action@v5
+        with:
+          context: ./nginx
+          push: true
+          tags: |
+            ghcr.io/alberfdezbell/todosevilla-proxy:latest
+            ghcr.io/alberfdezbell/todosevilla-proxy:${{ steps.vars.outputs.sha_short }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

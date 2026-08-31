@@ -52,7 +52,8 @@ services:
       restart_policy:
         condition: on-failure
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      # wget de BusyBox: usar -q y --spider (--no-verbose no existe en busybox)
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -60,16 +61,22 @@ services:
     depends_on:
       - db
 
-  # Proxy inverso local Nginx para HTTPS en red local en el puerto 8080
+  # Proxy inverso local Nginx para HTTPS en red local en el puerto 8080.
+  # Imagen propia (todosevilla-proxy) que incluye el nginx.conf corregido
+  # (resolver dinámico de Swarm) y genera sus certificados autofirmados en el
+  # arranque: NO depende de archivos del host (/opt/todosevilla/nginx).
   proxy:
-    image: nginx:alpine
+    image: ghcr.io/alberfdezbell/todosevilla-proxy:latest
     container_name: todosevilla_proxy
     ports:
       # Expone el panel solo en el puerto 8080 para toda la red local
       - "8080:443"
+    environment:
+      # CN para el certificado autofirmado generado en el arranque
+      PROXY_CERT_CN: ${PROXY_CERT_CN:-192.168.0.60}
     volumes:
-      - /opt/todosevilla/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - /opt/todosevilla/nginx/certs:/etc/nginx/certs
+      # Persistir los certificados autogenerados entre reinicios
+      - proxy_certs:/etc/nginx/certs
     networks:
       - todosevilla_net
     deploy:
@@ -96,6 +103,7 @@ services:
 volumes:
   pgdata:
   backups:
+  proxy_certs:
 
 networks:
   todosevilla_net:
