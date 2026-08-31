@@ -27,6 +27,8 @@ Para una guía paso a paso detallada (incluyendo preparación de VM, Cloudflare 
 
 > ℹ️ **Proxy autosuficiente**: el servicio `proxy` usa la imagen `ghcr.io/alberfdezbell/todosevilla-proxy` (construida desde `nginx/`), que incluye la configuración de Nginx corregida (resolver dinámico de Swarm) y **genera sus propios certificados SSL autofirmados en el arranque** si no existen (guardados en el volumen `proxy_certs`). Ya **no depende** del `nginx.conf` ni de los certificados que `iniciar_produccion.sh` creaba en `/opt/todosevilla/nginx/`. Para regenerar los certificados manualmente: `docker volume rm todosevilla_proxy_certs` (con el stack detenido o tras re-desplegar) y vuelve a desplegar.
 
+> 🌐 **Origen del túnel de Cloudflare**: en Cloudflare Zero Trust → Public Hostname, el *Service* del subdominio `todosevilla.aferbel.es` debe apuntar a **`http://proxy:80`** (el servidor nginx público del stack). Esa es la configuración correcta y documentada — **no usar** `http://app:3000` directo ni `localhost`.
+
 ---
 
 ## Inicio Rápido — Entorno de Desarrollo (Windows)
@@ -83,188 +85,48 @@ El panel de administración en `http://localhost:3000/panel/login`.
 
 ## Flujo de Trabajo: Cambio → GitHub → Producción
 
-### 1. Modificar el código en local y probarlo
-Realiza los cambios necesarios y pruébalos en `http://localhost:3000` con el entorno de desarrollo activo.
+### 1. Desarrollo local
 
-### 2. Subir los cambios a GitHub
-```bash
-git add .
-git commit -m "Descripción del cambio realizado"
-git push origin main
-```
+1. Realiza los cambios en el código.
+2. Pruébalos en local (`npm run dev`).
+3. Haz commit y push a la rama `main`.
 
-Al hacer push a `main`, GitHub Actions se activa automáticamente y:
-- Compila la imagen Docker de la nueva versión.
-- Inyecta el SHA del commit como variable de entorno (`GIT_COMMIT_SHA`), que queda **fijada dentro de la imagen** durante el build (no debe redefinirse desde el stack de Portainer).
-- Publica la imagen en GitHub Container Registry (GHCR) con los tags `latest` y el SHA corto.
-- El proceso tarda aproximadamente **3-5 minutos**.
+> ℹ️ Al hacer `push` a `main`, GitHub Actions compila y publica automáticamente dos imágenes en GHCR:
+> - `ghcr.io/alberfdezbell/todosevilla:latest` (la aplicación)
+> - `ghcr.io/alberfdezbell/todosevilla-proxy:latest` (el proxy nginx)
 
-### 3. Actualizar producción desde el Panel
-1. Accede al panel de administración: `https://192.168.0.60:8080/panel`
-2. En el **Dashboard**, haz clic en **"Buscar actualizaciones"**.
-   - El sistema consulta la API pública de GitHub y compara el SHA del último commit con el SHA de la versión en ejecución.
-   - Si hay diferencia, aparece el botón **"Confirmar actualización"**.
-3. Haz clic en **"Confirmar actualización"**.
-   - El sistema invoca el webhook de Portainer.
-   - Portainer descarga la nueva imagen y realiza un **rolling update sin caídas** (Docker Swarm).
-   - El nuevo contenedor ejecuta el script de arranque, el cual detecta la actualización (SHA del commit modificado), genera el backup y ejecuta las migraciones de base de datos antes de que la aplicación pase el healthcheck.
-4. Espera 1-2 minutos. La actualización es transparente para los visitantes.
+### 2. Actualización en Producción (Portainer)
 
-### 4. Rollback automático
-Si la nueva versión falla el healthcheck (base de datos no conecta, error de migración, etc.), Docker Swarm **no sustituye el contenedor viejo** y el servicio continúa en la versión anterior sin interrupción.
+Se publican **dos imágenes** con doble tag (`latest` + SHA corto). El panel detecta la nueva versión comparando el SHA del commit y, al confirmar, llama al webhook de Portainer.
 
-> ⚠️ **Importante**: El rollback automático revierte la aplicación, pero **no revierte la base de datos**. Al detectar una nueva versión, el `entrypoint.sh` realiza automáticamente un `pg_dump` de seguridad en el volumen `/backups`. Si ocurre un problema grave de datos, consulta la sección "Restaurar backup de base de datos" más abajo.
->
-> ℹ️ **Nota sobre reinicios**: El backup y las migraciones de Prisma se ejecutan **únicamente durante actualizaciones reales** (cuando cambia el SHA del commit). Si el contenedor simplemente se reinicia por mantenimiento del host, caída del host o reinicio del servicio Docker, el contenedor arrancará Next.js directamente sin ejecutar backups ni migraciones repetidas para optimizar el almacenamiento y el consumo de base de datos.
+### 3. Flujo de actualización sin caídas
 
----
+Cuando se detecta una actualización, el `entrypoint.sh` del contenedor:
+1. Espera a que la base de datos esté lista (`pg_isready` con URL libpq-safe, sin `?schema=public`).
+2. Toma un `pg_dump` de seguridad en el volumen `/backups`.
+3. Ejecuta `prisma migrate deploy`.
+4. Ejecuta el seed (idempotente, no duplica).
+5. Guarda el SHA desplegado y arranca `node server.js`.
 
-## Gestión del Panel de Administración
+### 4. Variables de entorno del Stack (Portainer)
 
-### Acceso
-- URL en red local: `https://192.168.0.60:8080/panel`
-- Usuario y contraseña: configurados en las variables `ADMIN_EMAIL` y `ADMIN_PASSWORD` del stack de Portainer.
+| Variable | Obligatoria | Descripción |
+|---|---|---|
+| `DB_USER` | Sí | Usuario de PostgreSQL del servicio `db` |
+| `DB_PASSWORD` | Sí | Contraseña de PostgreSQL del servicio `db` |
+| `DB_NAME` | Sí | Nombre de la base de datos del servicio `db` |
+| `ADMIN_EMAIL` | Sí | Email del usuario administrador inicial |
+| `ADMIN_PASSWORD` | Sí | Contraseña del administrador inicial (se fuerza su cambio en el primer login) |
+| `JWT_SECRET` | Sí | Secreto de firma de los JWT de sesión |
+| `CLOUDFLARE_TUNNEL_TOKEN` | Sí | Token del túnel de Cloudflare Zero Trust |
+| `PORTAINER_WEBHOOK_URL` | Sí | URL del webhook de Portainer para actualizaciones |
+| `PROXY_CERT_CN` | No | CN del certificado SSL autogenerado por el proxy (default `192.168.0.60`) |
 
-> La primera vez que accedas desde un navegador, verás un aviso de certificado SSL autofirmado. Es normal. Haz clic en "Avanzado" → "Continuar de todas formas" (o similar según el navegador). Ver `INICIAR.md` para más detalles.
-
-> 🔒 **Primer inicio de sesión**: El sistema detectará que es la primera vez que se accede y mostrará una pantalla de **cambio de contraseña obligatorio**. Debes establecer una contraseña nueva antes de poder acceder al panel. Una vez guardada, la sesión se cierra y debes volver a iniciar sesión con la nueva contraseña. `ADMIN_PASSWORD` es solo para el seed inicial; a partir de ahí, la contraseña vive en la base de datos.
-
-### Secciones del Panel
-
-| Sección | Descripción |
-|---|---|
-| **Dashboard** | Estadísticas de visitas y negocios. Botón de actualización. |
-| **Negocios** | Crear, editar y borrar fichas de negocios. |
-| **Zonas** | Crear, editar y borrar zonas geográficas (con opciones SEO). |
-| **Categorías** | Crear, editar y borrar categorías de negocios. |
-| **Textos Legales** | Editar Aviso Legal, Privacidad, Cookies y Términos de Uso. |
-| **Usuarios** | Gestionar cuentas de administradores. |
-| **Documentación** | Muestra este README en vivo. |
-
-### Gestión de Zonas
-1. Ve a **Zonas** → **Nueva Zona**.
-2. Escribe el nombre (ej. "Castilblanco de los Arroyos").
-3. El slug de URL se genera automáticamente (ej. `castilblanco-de-los-arroyos`).
-4. Opcionalmente añade descripción pública y metadatos SEO específicos para esa zona.
-
-### Gestión de Negocios
-1. Ve a **Negocios** → **Añadir Negocio**.
-2. Rellena el nombre, selecciona la categoría y la zona.
-3. El slug se genera automáticamente pero puedes modificarlo (es la URL pública de la ficha).
-4. Marca "Publicar ficha inmediatamente" o déjalo oculto hasta completar la información.
-
-### Interpretación de Estadísticas
-- **Visitas en el Periodo**: número de páginas vistas en el rango de fechas seleccionado (sin contar bots).
-- **Altas en el Periodo**: negocios creados en ese rango de fechas.
-- **Negocios más visitados**: ranking de fichas individuales con más visitas.
-- **Visitas por Zonas**: qué zonas reciben más tráfico.
-
-Las estadísticas son **cookieless y server-side**. No hay cookies de seguimiento ni datos personales de visitantes en la base de datos.
+> ⚠️ **`GIT_COMMIT_SHA` no debe definirse en Portainer**: se inyecta en la imagen durante el build. Definirla (aunque sea vacía o `dev-local-sha`) sobrescribe el valor de la imagen y rompe el comparador de actualizaciones del panel.
 
 ---
 
-## Gestión de Textos Legales
-
-Los textos de Aviso Legal, Política de Privacidad, Política de Cookies y Condiciones de Uso se editan **desde el propio panel** (sección "Textos Legales") y se guardan en la base de datos.
-
-> ⚠️ **ACCIÓN REQUERIDA antes de publicar**: Los documentos legales contienen marcadores `[PLACEHOLDER_*]` que debes sustituir con los datos reales del titular del sitio. Ver la sección "Campos a Sustituir en los Textos Legales" al final de este documento.
-
-### Dirección Fiscal como Imagen
-La dirección fiscal del titular se muestra como imagen para evitar indexación en texto plano por scrapers. Debes:
-1. Crear la imagen `direccion.webp` con la dirección fiscal del titular (fondo blanco, texto legible).
-2. Copiarla a la carpeta `public/images/direccion.webp` del proyecto.
-3. La imagen aparecerá automáticamente en los textos legales donde se incluye la etiqueta `<img src="/images/direccion.webp" ... />`.
-
-> **Nota legal**: La LSSI-CE exige que la identificación del titular sea **efectivamente accesible**. La imagen cumple este requisito siempre que el correo de contacto esté disponible en texto y sea funcional. Sin embargo, confirma esta decisión con tu asesor jurídico antes de publicar.
-
----
-
-## Restaurar Backup de Base de Datos
-
-Los backups automáticos se guardan en el volumen Docker `backups` (en la ruta `/backups` dentro del contenedor `app`). Se generan en formato Custom de PostgreSQL (`-F c`) y se conservan los **10 más recientes**.
-
-### ¿Cuándo restaurar?
-La restauración manual es necesaria ante un bug de aplicación que haya borrado o corrompido datos sin que el healthcheck lo detectara (el healthcheck solo verifica que el servidor responde, no la integridad de los datos).
-
-### Procedimiento completo de restauración
-
-> ⚠️ **Antes de empezar**: Haz un backup del estado **actual** de la base de datos antes de restaurar uno antiguo. Si la restauración no era lo que necesitabas, necesitarás este backup para volver al estado previo a la restauración.
-
-**Paso 1 — Backup de seguridad del estado actual**
-```bash
-# Obtener el ID del contenedor de la base de datos
-docker ps | grep todosevilla_db
-
-# Hacer un dump manual del estado actual (sustituye <container_id_db>)
-docker exec <container_id_db> pg_dump \
-  -U todosevilla_admin \
-  -F c \
-  -b \
-  -f /backups/backup_MANUAL_ANTES_DE_RESTAURAR.sql \
-  todosevilla
-```
-
-**Paso 2 — Listar los backups disponibles**
-```bash
-# Ver todos los backups con fecha y tamaño
-docker exec <container_id_db> ls -lh /backups/
-```
-El nombre de cada archivo indica la fecha y hora del despliegue que lo generó: `backup_YYYYMMDD_HHMMSS.sql`.
-
-**Paso 3 — Detener el servicio app para evitar escrituras durante la restauración**
-```bash
-# Escalar el servicio app a 0 réplicas (lo pausa sin eliminarlo)
-docker service scale todosevilla_app=0
-```
-Espera a que Portainer confirme que el servicio tiene 0 réplicas activas antes de continuar.
-
-**Paso 4 — Restaurar el backup elegido**
-```bash
-# Primero vaciar la base de datos (DROP + CREATE)
-docker exec -it <container_id_db> psql \
-  -U todosevilla_admin \
-  -c "DROP DATABASE IF EXISTS todosevilla;" \
-  -c "CREATE DATABASE todosevilla OWNER todosevilla_admin;"
-
-# Restaurar el backup elegido (sustituye el nombre del archivo)
-docker exec <container_id_db> pg_restore \
-  --no-owner \
-  --role=todosevilla_admin \
-  -U todosevilla_admin \
-  -d todosevilla \
-  /backups/backup_YYYYMMDD_HHMMSS.sql
-```
-
-> ℹ️ El flag `--no-owner` es necesario porque el dump puede haber sido creado con un rol diferente. El flag `--role` reasigna la propiedad al usuario correcto.
-
-**Paso 5 — Volver a arrancar el servicio app**
-```bash
-# Reescalar el servicio app a 1 réplica
-docker service scale todosevilla_app=1
-```
-Comprueba en Portainer que el servicio vuelve a estado `Running` y que el panel responde en `https://192.168.0.60:8080/panel`.
-
-> ⚠️ **Advertencia importante**: Restaurar un backup antiguo **elimina todos los datos creados después de la fecha del backup**. Esto incluye negocios, zonas, categorías, usuarios y visitas registradas después de ese punto. Si tienes dudas sobre qué backup elegir, consulta las fechas de los archivos y recuerda que el backup del **Paso 1** te permite deshacer la propia restauración si fuera necesario.
-
----
-
-
-## ¿Qué hacer si algo falla?
-
-### El panel no responde en https://192.168.0.60:8080
-1. Comprueba que el stack está activo en Portainer (`192.168.0.60:9443`).
-2. Verifica que el servicio `app` tiene la réplica en estado `Running`.
-3. Consulta los logs: `docker service logs todosevilla_app`.
-
-### La actualización falló
-1. En Portainer, el servicio mostrará el estado anterior (rollback automático).
-2. Consulta los logs del servicio para ver el error: `docker service logs todosevilla_app --tail 50`.
-3. Corrige el error en local, pruébalo, y vuelve a hacer push a GitHub.
-
-### La base de datos no conecta
-1. Verifica que el servicio `db` está en ejecución en Portainer.
-2. Comprueba la variable `DATABASE_URL` en el stack de Portainer.
-3. Si hay un fallo grave, restaura desde el backup automático (ver sección anterior).
+## Solución de Problemas
 
 ### El despliegue falla con `deployment failed: task: non-zero exit (1)`
 
@@ -276,6 +138,12 @@ El mensaje es genérico; hay que mirar los logs del task fallido: `docker servic
 | `host not found in upstream "app"` (nginx) | Con `endpoint_mode: dnsrr`, el DNS de Swarm no publica el nombre `app` hasta que el servicio tiene tareas vivas; nginx resolvía el upstream al arrancar sin variable | Corregido de forma permanente en la imagen `todosevilla-proxy` (lleva su propio `nginx.conf` con `resolver 127.0.0.11` + `proxy_pass` con variable). Actualiza el stack a la imagen nueva. |
 | `ERROR CRÍTICO DE SEGURIDAD: Las variables de entorno ADMIN_EMAIL y ADMIN_PASSWORD...` | `ADMIN_EMAIL`/`ADMIN_PASSWORD` vacías en el stack de Portainer | Definir las variables en el Stack de Portainer → Environment variables. La de `JWT_SECRET` también. |
 | `cannot load certificate key /etc/nginx/certs/server.key` o `Is a directory` | Faltan los certificados o el `nginx.conf` en `/opt/todosevilla/nginx/` del host | Ya no aplica: la imagen `todosevilla-proxy` genera sus propios certificados autofirmados en el arranque. Solo aparece si el stack sigue usando el compose antiguo con los mounts del host. |
+| `exit (137): dockerexec: unhealthy container` (app) | El healthcheck marcó el contenedor como "unhealthy" y Swarm lo eliminó (SIGKILL). Causas típicas: imagen antigua (entrypoint en bucle) o healthcheck con flags que BusyBox no soporta | Corregido: healthcheck con `node` + `http.get`. Diagnóstico: `docker service logs todosevilla_app --tail 100` y `docker inspect <container_id> --format '{{json .State.Health}}'`. |
+| `Authentication failed against database server at 'db', ... are not valid` | Las credenciales guardadas en el volumen `pgdata` no coinciden con las del `app`. Postgres solo aplica `POSTGRES_PASSWORD` la primera vez que se inicializa el volumen | Recrear el volumen de BD (`docker stack rm todosevilla` + `docker volume rm todosevilla_pgdata` + redeploy) o usar la misma contraseña con la que se creó el volumen. Verificar: `docker exec <db> sh -c 'PGPASSWORD=todosevilla_secure_pass psql -h 127.0.0.1 -U todosevilla_admin -d todosevilla -tAc "select 1"'`. |
+| `Prisma Client could not locate the Query Engine for runtime "linux-musl-openssl-3.0.x"` | El `prisma generate` no incluyó el binario del Query Engine para Alpine, solo `native` | Corregido: `binaryTargets` en `schema.prisma` añade `linux-musl-openssl-3.0.x` y el Dockerfile re-genera el cliente en el build. |
+| `Cannot find module '@prisma/internals'` o error al ejecutar "Ejecutando migraciones de Prisma..." | El runner standalone no incluía las dependencias transitivas del CLI de Prisma | Corregido en el Dockerfile: se copia `node_modules` completo desde la etapa `deps`. |
+| `502 Bad Gateway` en `https://todosevilla.aferbel.es` (pública) | La cadena túnel → nginx → app se corta | Verificar origen del túnel (`http://proxy:80`) y `docker exec <id_proxy> wget -qO- http://app:3000/api/health`. |
+| `tunnel`: `dial tcp 10.0.x.x:80: i/o timeout` (bad gateway) | El routing mesh/IPVS de Swarm no enruta el tráfico entre servicios en LXC de Proxmox | Corregido: `proxy` usa `endpoint_mode: dnsrr` + `ports` `mode: host`. |
 | Error de módulo nativo (`bcrypt`/Prisma `was compiled against a different platform`) | Imagen construida desde Windows copiando `node_modules` | Con el nuevo `.dockerignore` ya no ocurre; reconstruir desde GitHub Actions (Linux). |
 
 > ℹ️ Después de estos cambios hay que **reconstruir la imagen** (push a `main` → GitHub Actions publica `ghcr.io/alberfdezbell/todosevilla:latest`) y **redesplegar el stack**, porque el `entrypoint.sh` y el `nginx.conf` viven dentro de la imagen/contenedor.
