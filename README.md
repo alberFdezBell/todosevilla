@@ -41,7 +41,6 @@ ALTER TABLE "Business" ALTER COLUMN "published" SET DEFAULT true;
 ```
 
 La aplicación incluye además una comprobación defensiva al arrancar para auto-corregir ese estado heredado antes de que Prisma ejecute consultas de negocio.
-
 ---
 
 ## Inicio Rápido — Entorno de Desarrollo (Windows)
@@ -209,6 +208,7 @@ La restauración manual es necesaria ante un bug de aplicación que haya borrado
 ```bash
 # Obtener el ID del contenedor de la base de datos
 docker ps | grep todosevilla_db
+```
 
 # Hacer un dump manual del estado actual (sustituye <container_id_db>)
 docker exec <container_id_db> pg_dump \
