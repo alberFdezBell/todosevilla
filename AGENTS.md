@@ -101,6 +101,7 @@ todo castilblanco/
 ├── entrypoint.sh                   # Backup pg_dump + prisma migrate deploy + node server.js
 ├── docker-compose.yml              # Stack de producción Swarm
 ├── docker-compose.dev.yml          # Solo PostgreSQL para desarrollo local
+├── nginx/nginx.conf                # Nginx con TLS autofirmado en puerto 8080
 ├── next.config.js                  # output: standalone + cabeceras HTTP de seguridad
 ├── .env.example                    # Plantilla de variables de entorno
 ├── .gitignore
@@ -150,7 +151,6 @@ GitHub Actions (3-5 min)
    → npm ci + prisma generate + npm run build
    → GIT_COMMIT_SHA inyectado
    → docker build + push ghcr.io/alberfdezbell/todosevilla:latest
-   → docker build + push ghcr.io/alberfdezbell/todosevilla-proxy:latest
    ↓
 Admin pulsa "Buscar actualizaciones" en /panel
    → fetch api.github.com/repos/alberFdezBell/todosevilla/commits/main
@@ -162,24 +162,26 @@ Admin confirma → POST /api/system/update
    ↓
 Portainer descarga ghcr.io/alberfdezbell/todosevilla:latest
    (imagen publicada con doble tag: `latest` + SHA corto del commit para trazabilidad)
+   (el webhook de Portainer fuerza un re-pull de `latest` siempre, comparando digest en GHCR)
    → levanta nuevo contenedor (start-first)
    → nuevo contenedor ejecuta entrypoint.sh:
        1. pg_isready (esperar BD) — usando una URL "libpq-safe" SIN el parámetro ?schema=public
           (ese parámetro es exclusivo del driver de Prisma y hace fallar a pg_isready/psql/pg_dump)
        2. pg_try_advisory_lock(123456) en Postgres para evitar race conditions
           - Si adquiere el lock: comprueba GIT_COMMIT_SHA vs /backups/last_deployed_sha.txt
-          - Si NO adquiere el lock (otra réplica lo tiene): espera bloqueado hasta que se libere
+          - Si NO adquiere el lock (otra réplica lo tiene): espera bloqueado hasta que se libere, luego continúa sin repetir tareas
        3. SI ES DIFERENTE (Actualización):
           - pg_dump (URL libpq-safe) → /backups/backup_TIMESTAMP.sql
           - Conservar solo los últimos 10 backups (.sql) y borrar el resto
-          - node ./node_modules/prisma/build/index.js migrate deploy
+          - npx prisma migrate deploy
           - node prisma/seed.js (check-first: no duplica admin ni documentos ya editados)
           - Guardar el nuevo SHA en /backups/last_deployed_sha.txt
        4. SI ES IGUAL (Reinicio normal):
-          - Saltar backups, limpieza, migraciones y seed
+          - Saltar backups, limpieza, migraciones y seed para evitar saturación de disco y DB
        5. pg_advisory_unlock(123456)
        6. node server.js
-   → Docker espera healthcheck GET /api/health (node, no wget de BusyBox)
+   → Docker espera healthcheck GET /api/health
+     (start_period: 60s para absorber migraciones largas, monitor: 60s antes de confirmar el rollout)
    → SI PASA: retira el contenedor viejo → tráfico conmutado
    → SI FALLA: contenedor nuevo eliminado, viejo sigue activo (rollback)
 ```
@@ -217,7 +219,7 @@ El panel en `/panel` está protegido por una **barrera física de red en Nginx**
 
 2. **Middleware de la App y Autenticación Stateless**:
    - Si por un error de configuración del túnel el tráfico público se saltara Nginx y golpease la app directamente en el puerto `3000`, el middleware de Next.js (`src/middleware.ts`) detecta de inmediato las cabeceras `cf-connecting-ip` o `cf-ray` y retorna HTTP 403.
-   - La autenticación es **100% stateless**. Se basa en un token JWT firmado de forma criptográfica del lado del servidor utilizando `JWT_SECRET` y guardado en una cookie `httpOnly` de 7 días. Ningún estado se guarda en la memoria del servidor ni en disco local.
+   - La autenticación es **100% stateless**. Se basa en un token JWT firmado de forma criptográfica del lado del servidor utilizando `JWT_SECRET` y guardado en una cookie `httpOnly` de 7 días. Ningún estado se guarda en la memoria del servidor ni en disco local. Esto permite balancear la carga entre múltiples réplicas (si se decide escalar) sin necesidad de configurar sesiones pegajosas (sticky sessions) ni almacenamiento compartido de sesiones (ej. Redis).
 
 ---
 
@@ -225,17 +227,14 @@ El panel en `/panel` está protegido por una **barrera física de red en Nginx**
 
 | Variable | Desarrollo | Producción |
 |---|---|---|
-| `DB_USER` | `todosevilla_dev` | Configurado en Portainer Stack |
-| `DB_PASSWORD` | `todosevilla_dev_pass` | Configurado en Portainer Stack |
-| `DB_NAME` | `todosevilla_dev` | `todosevilla` |
-| `DATABASE_URL` | `postgresql://...@localhost:5432/...?schema=public` | `postgresql://...@db:5432/todosevilla?schema=public` |
+| `DATABASE_URL` | `postgresql://todosevilla_dev:...@localhost:5432/todosevilla_dev` | `postgresql://admin:PASS@db:5432/todosevilla` (servicio Docker) |
 | `ADMIN_EMAIL` | `admin@todosevilla.es` | Configurado en Portainer Stack |
 | `ADMIN_PASSWORD` | Valor del `.env` local | Configurado en Portainer Stack |
 | `JWT_SECRET` | Valor del `.env` local | Secreto aleatorio en Portainer Stack |
 | `PORTAINER_WEBHOOK_URL` | No funcional en dev | URL del webhook del stack en Portainer |
-| `PROXY_CERT_CN` | No aplica | `192.168.0.60` (default) |
+| `GIT_COMMIT_SHA` | `dev-local-sha` | Inyectado por GitHub Actions en build |
 | `NEXT_PUBLIC_SITE_URL` | `http://localhost:3000` | `https://todosevilla.aferbel.es` |
-| `CLOUDFLARE_TUNNEL_TOKEN` | No funcional en dev | Token del túnel en el panel web (Portainer Stack) |
+| `CLOUDFLARE_TUNNEL_TOKEN`| No funcional en dev | Token del túnel en el panel web (Portainer Stack) |
 
 ---
 
@@ -250,7 +249,7 @@ El panel en `/panel` está protegido por una **barrera física de red en Nginx**
 7. **`seed.js` es idempotente por diseño**: usa check-first (busca antes de crear). El admin solo se crea si no existe. Los documentos legales también. Esto significa que las ediciones realizadas desde el panel (`/panel/documentos`) **no se pierden** en actualizaciones.
 8. **`ADMIN_PASSWORD` no tiene valor por defecto**. Si se omite la variable en el stack, el seed lanza un error y el contenedor sale con código 1 (Swarm hace rollback). La contraseña temporal del seed activa `mustChangePassword: true`, que obliga al cambio en el primer login antes de poder usar el panel.
 9. **Advisory lock de Postgres** (ID `123456`): el `entrypoint.sh` usa `pg_try_advisory_lock` para garantizar que solo un contenedor ejecuta migraciones y backup simultáneamente. No modificar este mecanismo sin revisar las implicaciones en escenarios de rollback.
-10. **Configuración de Red Swarm (dnsrr) en Proxmox**: Se utiliza `endpoint_mode: dnsrr` en los servicios `db`, `app` y `proxy` para prevenir problemas de enrutamiento de IPVS (IP Virtual Server) dentro de la red overlay del kernel de Linux, habituales en contenedores LXC de Proxmox. No cambiar a VIP sin validar antes la estabilidad de red.
+10. **Configuración de Red Swarm (dnsrr) en Proxmox**: Se utiliza `endpoint_mode: dnsrr` en los servicios `db` y `app` para prevenir problemas de enrutamiento de IPVS (IP Virtual Server) dentro de la red overlay del kernel de Linux, habituales en contenedores LXC de Proxmox. No cambiar a VIP sin validar antes la estabilidad de red.
 11. **`?schema=public` solo lo entiende Prisma**: las herramientas `libpq` (`pg_isready`, `psql`, `pg_dump`) fallan con `invalid URI query parameter`. El `entrypoint.sh` deriva `LIBPQ_URL` quitando la query string con `cut -d'?' -f1` y usa esa URL para todo lo que no sea Prisma. No devolver el `?schema=public` a esas llamadas.
 12. **`nginx.conf` resuelve `app` en runtime**: se usa `resolver 127.0.0.11` + `proxy_pass` con variable (`set $app_upstream`) porque con `endpoint_mode: dnsrr` el DNS de Swarm solo publica el nombre del servicio cuando tiene tareas vivas. No volver al `proxy_pass http://app:3000;` literal sin resolver, o nginx abortará con `host not found in upstream` en arranques en caliente.
 13. **`GIT_COMMIT_SHA` no tiene que redefinirse en el compose**: la variable se inyecta como ENV en la imagen durante el build (ARG GIT_COMMIT_SHA desde GitHub Actions). Definirla en el stack de Portainer (aunque sea vacía) sobrescribe el valor de la imagen y rompe el comparador de actualizaciones del panel.
@@ -260,3 +259,4 @@ El panel en `/panel` está protegido por una **barrera física de red en Nginx**
 17. **`proxy` con `endpoint_mode: dnsrr` y `ports` en `mode: host`**: el servicio `proxy` necesita también `dnsrr` (igual que `db`/`app`) porque el routing mesh/IPVS de Swarm falla en LXC de Proxmox (el túnel de cloudflared sufría `dial tcp <VIP>:80: i/o timeout`). Con `dnsrr`, `cloudflared` y `nginx` resuelven la IP real de la tarea y conectan directo. El puerto público del panel se publica con `mode: host` (published 8080 → target 443) porque `dnsrr` no usa el ingress mesh. No volver a `ports: "8080:443"` literal con VIP en este entorno.
 18. **`binaryTargets` de Prisma para Alpine**: el `schema.prisma` del `generator client` debe incluir `linux-musl-openssl-3.0.x` (además de `native`), porque el runtime de `node:20-alpine` exige ese binario. Sin él, `prisma generate` produce un cliente sin el Query Engine del contenedor y cualquier consulta falla con `Prisma Client could not locate the Query Engine for runtime "linux-musl-openssl-3.0.x"` → healthcheck unhealthy → exit(1). Mantener `binaryTargets` tal cual.
 19. **Credenciales de Postgres y volumen `pgdata`**: el contenedor oficial de Postgres solo aplica `POSTGRES_USER`/`POSTGRES_PASSWORD` la **primera vez** que se inicializa el volumen. Si el volumen se creó con otros valores, cambiar las variables en el compose NO cambia la contraseña almacenada → la app falla con `Authentication failed ... are not valid`. Para alinear sin borrar datos: `docker exec "$(docker ps -q -f name=todosevilla_db)" psql -U postgres -c "ALTER USER todosevilla_admin WITH PASSWORD 'todosevilla_secure_pass';"`. Alternativa: recrear el volumen (`docker stack rm todosevilla` + `docker volume rm todosevilla_pgdata` + redeploy). Diagnosticar con: `docker exec <db> sh -c 'PGPASSWORD=<pass> psql -h 127.0.0.1 -U <user> -d <db> -tAc "select 1"'`.
+20. **Deriva entre `schema.prisma` y las migraciones (CAUSA del error 500 "Application error")**: el modelo `Business` usaba el campo `schedule`, pero la migración `20260831000000_init` creó la columna `hours`; al no generarse migración del renombrado, la BD de producción (levantada con `migrate deploy`) no tenía `schedule` y cualquier `findMany/create/update` de negocios fallaba con P2022 `column "schedule" does not exist` (página pública con error digest, healthcheck OK porque solo hace `SELECT 1`). Cuando edites el esquema (renombrar, añadir o quitar campos) **genera SIEMPRE la migración** con `npx prisma migrate dev --name <descripcion>` y valida con `npx prisma migrate status`. La migración `20260831000002_rename_hours_to_schedule` corrige la deriva (renombra `hours` → `schedule` y ajusta `published` default a true; aditiva, sin pérdida de datos). Las columnas huérfanas `Business.email/seoTitle/seoDescription` y `PageVisit.userAgent/bot` han quedado en la BD pero el schema actual no las usa; Prisma las ignora y se dejaron intactas por la política de migraciones aditivas.
