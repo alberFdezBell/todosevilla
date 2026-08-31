@@ -13,6 +13,7 @@ services:
     networks:
       - todosevilla_net
     deploy:
+      endpoint_mode: dnsrr
       restart_policy:
         condition: on-failure
 
@@ -33,6 +34,7 @@ services:
       - todosevilla_net
     deploy:
       replicas: 1
+      endpoint_mode: dnsrr
       update_config:
         parallelism: 1
         delay: 10s
