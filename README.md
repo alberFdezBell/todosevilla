@@ -1,0 +1,281 @@
+# Todo Sevilla — Manual del Administrador
+
+> **Aviso permanente para el agente de IA**: Cada vez que se realice un cambio relevante en el proyecto (nueva funcionalidad, cambio en el esquema de base de datos, cambio en el flujo de despliegue, etc.) este `README.md` debe actualizarse para reflejar el estado actual.
+
+---
+
+## ¿Qué es Todo Sevilla?
+
+**Todo Sevilla** es un directorio de negocios locales de la provincia de Sevilla, accesible en `https://todosevilla.aferbel.es`. Permite a los visitantes encontrar comercios, profesionales y servicios clasificados por zonas geográficas y categorías.
+
+El proyecto incluye:
+- **Landing pública**: Buscador, listado de zonas y fichas de negocios con SEO técnico.
+- **Panel de administración privado**: Accesible únicamente en red local (`https://192.168.0.60:8080/panel`).
+- **Infraestructura Docker Swarm** en Portainer sobre Proxmox con actualizaciones sin caídas.
+
+---
+
+## Despliegue en Producción (Proxmox)
+
+Para instalar el entorno completo de producción (Docker, Swarm, Portainer y descargar el proyecto) de forma interactiva en un contenedor Debian/Ubuntu vacío, puedes ejecutar nuestro script automatizado por SSH:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/alberFdezBell/todosevilla/main/iniciar_produccion.sh -o iniciar_produccion.sh && chmod +x iniciar_produccion.sh && ./iniciar_produccion.sh
+```
+
+Para una guía paso a paso detallada (incluyendo preparación de VM, Cloudflare Tunnel y Webhooks de Portainer), consulta el manual de **[INICIAR.md](file:///c:/Users/alber/Desktop/todo%20castilblanco/INICIAR.md)**.
+
+---
+
+## Inicio Rápido — Entorno de Desarrollo (Windows)
+
+### Requisitos
+- [Docker Desktop para Windows](https://www.docker.com/products/docker-desktop/) instalado y en ejecución.
+- [Node.js 20+](https://nodejs.org/) y npm instalados.
+
+### Pasos
+
+**1. Clonar el repositorio**
+```bash
+git clone https://github.com/alberFdezBell/todosevilla.git
+cd todosevilla
+```
+
+**2. Configurar las variables de entorno de desarrollo**
+```bash
+copy .env.example .env
+```
+Edita el archivo `.env` y ajusta los valores (el archivo `.env.example` ya incluye los valores por defecto para desarrollo local).
+
+**3. Levantar la base de datos PostgreSQL**
+```bash
+docker-compose -f docker-compose.dev.yml up -d
+```
+Esto levanta un contenedor PostgreSQL en el puerto `5432` de tu máquina local, completamente aislado de producción.
+
+**4. Instalar dependencias de Node.js**
+```bash
+npm install
+```
+
+**5. Ejecutar las migraciones de base de datos**
+```bash
+npx prisma migrate dev --name init
+```
+
+**6. Cargar los datos iniciales (seed)**
+```bash
+npx prisma db seed
+```
+Esto crea el usuario administrador (`ADMIN_EMAIL` / `ADMIN_PASSWORD` del `.env`) y los textos legales básicos.
+
+**7. Iniciar el servidor de desarrollo**
+```bash
+npm run dev
+```
+
+La web estará disponible en `http://localhost:3000`.
+El panel de administración en `http://localhost:3000/panel/login`.
+
+---
+
+## Flujo de Trabajo: Cambio → GitHub → Producción
+
+### 1. Modificar el código en local y probarlo
+Realiza los cambios necesarios y pruébalos en `http://localhost:3000` con el entorno de desarrollo activo.
+
+### 2. Subir los cambios a GitHub
+```bash
+git add .
+git commit -m "Descripción del cambio realizado"
+git push origin main
+```
+
+Al hacer push a `main`, GitHub Actions se activa automáticamente y:
+- Compila la imagen Docker de la nueva versión.
+- Inyecta el SHA del commit como variable de entorno (`GIT_COMMIT_SHA`).
+- Publica la imagen en GitHub Container Registry (GHCR) con los tags `latest` y el SHA corto.
+- El proceso tarda aproximadamente **3-5 minutos**.
+
+### 3. Actualizar producción desde el Panel
+1. Accede al panel de administración: `https://192.168.0.60:8080/panel`
+2. En el **Dashboard**, haz clic en **"Buscar actualizaciones"**.
+   - El sistema consulta la API pública de GitHub y compara el SHA del último commit con el SHA de la versión en ejecución.
+   - Si hay diferencia, aparece el botón **"Confirmar actualización"**.
+3. Haz clic en **"Confirmar actualización"**.
+   - El sistema invoca el webhook de Portainer.
+   - Portainer descarga la nueva imagen y realiza un **rolling update sin caídas** (Docker Swarm).
+   - El nuevo contenedor ejecuta el script de arranque, el cual detecta la actualización (SHA del commit modificado), genera el backup y ejecuta las migraciones de base de datos antes de que la aplicación pase el healthcheck.
+4. Espera 1-2 minutos. La actualización es transparente para los visitantes.
+
+### 4. Rollback automático
+Si la nueva versión falla el healthcheck (base de datos no conecta, error de migración, etc.), Docker Swarm **no sustituye el contenedor viejo** y el servicio continúa en la versión anterior sin interrupción.
+
+> ⚠️ **Importante**: El rollback automático revierte la aplicación, pero **no revierte la base de datos**. Al detectar una nueva versión, el `entrypoint.sh` realiza automáticamente un `pg_dump` de seguridad en el volumen `/backups`. Si ocurre un problema grave de datos, consulta la sección "Restaurar backup de base de datos" más abajo.
+>
+> ℹ️ **Nota sobre reinicios**: El backup y las migraciones de Prisma se ejecutan **únicamente durante actualizaciones reales** (cuando cambia el SHA del commit). Si el contenedor simplemente se reinicia por mantenimiento del host, caída del host o reinicio del servicio Docker, el contenedor arrancará Next.js directamente sin ejecutar backups ni migraciones repetidas para optimizar el almacenamiento y el consumo de base de datos.
+
+---
+
+## Gestión del Panel de Administración
+
+### Acceso
+- URL en red local: `https://192.168.0.60:8080/panel`
+- Usuario y contraseña: configurados en las variables `ADMIN_EMAIL` y `ADMIN_PASSWORD` del stack de Portainer.
+
+> La primera vez que accedas desde un navegador, verás un aviso de certificado SSL autofirmado. Es normal. Haz clic en "Avanzado" → "Continuar de todas formas" (o similar según el navegador). Ver `INICIAR.md` para más detalles.
+
+> 🔒 **Primer inicio de sesión**: El sistema detectará que es la primera vez que se accede y mostrará una pantalla de **cambio de contraseña obligatorio**. Debes establecer una contraseña nueva antes de poder acceder al panel. Una vez guardada, la sesión se cierra y debes volver a iniciar sesión con la nueva contraseña. `ADMIN_PASSWORD` es solo para el seed inicial; a partir de ahí, la contraseña vive en la base de datos.
+
+### Secciones del Panel
+
+| Sección | Descripción |
+|---|---|
+| **Dashboard** | Estadísticas de visitas y negocios. Botón de actualización. |
+| **Negocios** | Crear, editar y borrar fichas de negocios. |
+| **Zonas** | Crear, editar y borrar zonas geográficas (con opciones SEO). |
+| **Categorías** | Crear, editar y borrar categorías de negocios. |
+| **Textos Legales** | Editar Aviso Legal, Privacidad, Cookies y Términos de Uso. |
+| **Usuarios** | Gestionar cuentas de administradores. |
+| **Documentación** | Muestra este README en vivo. |
+
+### Gestión de Zonas
+1. Ve a **Zonas** → **Nueva Zona**.
+2. Escribe el nombre (ej. "Castilblanco de los Arroyos").
+3. El slug de URL se genera automáticamente (ej. `castilblanco-de-los-arroyos`).
+4. Opcionalmente añade descripción pública y metadatos SEO específicos para esa zona.
+
+### Gestión de Negocios
+1. Ve a **Negocios** → **Añadir Negocio**.
+2. Rellena el nombre, selecciona la categoría y la zona.
+3. El slug se genera automáticamente pero puedes modificarlo (es la URL pública de la ficha).
+4. Marca "Publicar ficha inmediatamente" o déjalo oculto hasta completar la información.
+
+### Interpretación de Estadísticas
+- **Visitas en el Periodo**: número de páginas vistas en el rango de fechas seleccionado (sin contar bots).
+- **Altas en el Periodo**: negocios creados en ese rango de fechas.
+- **Negocios más visitados**: ranking de fichas individuales con más visitas.
+- **Visitas por Zonas**: qué zonas reciben más tráfico.
+
+Las estadísticas son **cookieless y server-side**. No hay cookies de seguimiento ni datos personales de visitantes en la base de datos.
+
+---
+
+## Gestión de Textos Legales
+
+Los textos de Aviso Legal, Política de Privacidad, Política de Cookies y Condiciones de Uso se editan **desde el propio panel** (sección "Textos Legales") y se guardan en la base de datos.
+
+> ⚠️ **ACCIÓN REQUERIDA antes de publicar**: Los documentos legales contienen marcadores `[PLACEHOLDER_*]` que debes sustituir con los datos reales del titular del sitio. Ver la sección "Campos a Sustituir en los Textos Legales" al final de este documento.
+
+### Dirección Fiscal como Imagen
+La dirección fiscal del titular se muestra como imagen para evitar indexación en texto plano por scrapers. Debes:
+1. Crear la imagen `direccion.webp` con la dirección fiscal del titular (fondo blanco, texto legible).
+2. Copiarla a la carpeta `public/images/direccion.webp` del proyecto.
+3. La imagen aparecerá automáticamente en los textos legales donde se incluye la etiqueta `<img src="/images/direccion.webp" ... />`.
+
+> **Nota legal**: La LSSI-CE exige que la identificación del titular sea **efectivamente accesible**. La imagen cumple este requisito siempre que el correo de contacto esté disponible en texto y sea funcional. Sin embargo, confirma esta decisión con tu asesor jurídico antes de publicar.
+
+---
+
+## Restaurar Backup de Base de Datos
+
+Los backups automáticos se guardan en el volumen Docker `backups` (en la ruta `/backups` dentro del contenedor `app`). Se generan en formato Custom de PostgreSQL (`-F c`) y se conservan los **10 más recientes**.
+
+### ¿Cuándo restaurar?
+La restauración manual es necesaria ante un bug de aplicación que haya borrado o corrompido datos sin que el healthcheck lo detectara (el healthcheck solo verifica que el servidor responde, no la integridad de los datos).
+
+### Procedimiento completo de restauración
+
+> ⚠️ **Antes de empezar**: Haz un backup del estado **actual** de la base de datos antes de restaurar uno antiguo. Si la restauración no era lo que necesitabas, necesitarás este backup para volver al estado previo a la restauración.
+
+**Paso 1 — Backup de seguridad del estado actual**
+```bash
+# Obtener el ID del contenedor de la base de datos
+docker ps | grep todosevilla_db
+
+# Hacer un dump manual del estado actual (sustituye <container_id_db>)
+docker exec <container_id_db> pg_dump \
+  -U todosevilla_admin \
+  -F c \
+  -b \
+  -f /backups/backup_MANUAL_ANTES_DE_RESTAURAR.sql \
+  todosevilla
+```
+
+**Paso 2 — Listar los backups disponibles**
+```bash
+# Ver todos los backups con fecha y tamaño
+docker exec <container_id_db> ls -lh /backups/
+```
+El nombre de cada archivo indica la fecha y hora del despliegue que lo generó: `backup_YYYYMMDD_HHMMSS.sql`.
+
+**Paso 3 — Detener el servicio app para evitar escrituras durante la restauración**
+```bash
+# Escalar el servicio app a 0 réplicas (lo pausa sin eliminarlo)
+docker service scale todosevilla_app=0
+```
+Espera a que Portainer confirme que el servicio tiene 0 réplicas activas antes de continuar.
+
+**Paso 4 — Restaurar el backup elegido**
+```bash
+# Primero vaciar la base de datos (DROP + CREATE)
+docker exec -it <container_id_db> psql \
+  -U todosevilla_admin \
+  -c "DROP DATABASE IF EXISTS todosevilla;" \
+  -c "CREATE DATABASE todosevilla OWNER todosevilla_admin;"
+
+# Restaurar el backup elegido (sustituye el nombre del archivo)
+docker exec <container_id_db> pg_restore \
+  --no-owner \
+  --role=todosevilla_admin \
+  -U todosevilla_admin \
+  -d todosevilla \
+  /backups/backup_YYYYMMDD_HHMMSS.sql
+```
+
+> ℹ️ El flag `--no-owner` es necesario porque el dump puede haber sido creado con un rol diferente. El flag `--role` reasigna la propiedad al usuario correcto.
+
+**Paso 5 — Volver a arrancar el servicio app**
+```bash
+# Reescalar el servicio app a 1 réplica
+docker service scale todosevilla_app=1
+```
+Comprueba en Portainer que el servicio vuelve a estado `Running` y que el panel responde en `https://192.168.0.60:8080/panel`.
+
+> ⚠️ **Advertencia importante**: Restaurar un backup antiguo **elimina todos los datos creados después de la fecha del backup**. Esto incluye negocios, zonas, categorías, usuarios y visitas registradas después de ese punto. Si tienes dudas sobre qué backup elegir, consulta las fechas de los archivos y recuerda que el backup del **Paso 1** te permite deshacer la propia restauración si fuera necesario.
+
+---
+
+
+## ¿Qué hacer si algo falla?
+
+### El panel no responde en https://192.168.0.60:8080
+1. Comprueba que el stack está activo en Portainer (`192.168.0.60:9443`).
+2. Verifica que el servicio `app` tiene la réplica en estado `Running`.
+3. Consulta los logs: `docker service logs todosevilla_app`.
+
+### La actualización falló
+1. En Portainer, el servicio mostrará el estado anterior (rollback automático).
+2. Consulta los logs del servicio para ver el error: `docker service logs todosevilla_app --tail 50`.
+3. Corrige el error en local, pruébalo, y vuelve a hacer push a GitHub.
+
+### La base de datos no conecta
+1. Verifica que el servicio `db` está en ejecución en Portainer.
+2. Comprueba la variable `DATABASE_URL` en el stack de Portainer.
+3. Si hay un fallo grave, restaura desde el backup automático (ver sección anterior).
+
+---
+
+## Campos a Sustituir en los Textos Legales
+
+Antes de la publicación, accede al panel → "Textos Legales" y edita cada documento sustituyendo los marcadores siguientes:
+
+| Marcador | Descripción | Documentos afectados |
+|---|---|---|
+| `[PLACEHOLDER_TITULAR]` | Nombre completo o razón social del titular | Aviso Legal, Privacidad, Términos |
+| `[PLACEHOLDER_NIF]` | NIF o NIE del titular | Aviso Legal, Privacidad |
+| `[PLACEHOLDER_EMAIL]` | Correo electrónico de contacto público | Todos |
+
+La **dirección fiscal** no aparece como texto en el código: se muestra como imagen `direccion.webp` (ver sección anterior).
+
+> ⚠️ **Descargo de responsabilidad**: Los textos legales incluidos en este proyecto son una base razonable pero **no sustituyen en ningún caso el asesoramiento de un abogado**. Deben personalizarse con los datos reales del titular y revisarse por un profesional jurídico antes de su publicación, especialmente en lo relativo a cumplimiento del RGPD y la LSSI-CE.

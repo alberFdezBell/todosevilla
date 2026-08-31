@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Bloquear el rastreo del panel de administración
+Disallow: /panel/
+Disallow: /api/
+
+Sitemap: https://todosevilla.aferbel.es/sitemap.xml
