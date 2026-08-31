@@ -11,7 +11,7 @@ LOCK_ID=123456
 # Esperar a que la base de datos PostgreSQL esté lista
 if [ -n "$DATABASE_URL" ]; then
   echo "Verificando conexión con la base de datos..."
-  until pg_isready -d "$DATABASE_URL" -h "${DB_HOST:-db}" -p "${DB_PORT:-5432}"; do
+  until pg_isready -h "${DB_HOST:-db}" -p "${DB_PORT:-5432}" -U "${DB_USER:-todosevilla_admin}"; do
     echo "Esperando a que la base de datos responda..."
     sleep 2
   done

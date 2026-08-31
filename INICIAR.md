@@ -66,6 +66,14 @@ apt update && apt upgrade -y
 apt install -y curl git wget openssl
 ```
 
+### Clonar el Repositorio de la Aplicación
+
+Debes clonar el repositorio en el directorio `/opt/todosevilla` del host de producción. Esto es **obligatorio** ya que el proxy inverso (Nginx) y los contenedores leen archivos de configuración y scripts directamente desde este directorio:
+
+```bash
+git clone https://github.com/alberFdezBell/todosevilla.git /opt/todosevilla
+```
+
 ---
 
 ## Paso 2 — Instalar Docker y activar Swarm
