@@ -40,13 +40,13 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
-# CLI de Prisma para ejecutar las migraciones en el arranque (entrypoint.sh).
-# El runner standalone de Next.js NO incluye node_modules/.bin/prisma; sin esta
-# copia, npx intentaría descargar el CLI desde internet en tiempo de ejecución.
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# node_modules COMPLETO desde la etapa 'deps': incluye el CLI de Prisma
+# (prisma/build/index.js) con TODAS sus dependencias transitivas (@prisma/internals,
+# @prisma/config, yaml, ...), los engines nativos (@prisma/engines) y bcrypt.
+# El standalone de Next.js solo traza las dependencias de la app, y sin esta
+# copia el CLI falla con 'Cannot find module @prisma/internals' -> exit(1) en migrate deploy.
+COPY --from=deps /app/node_modules ./node_modules
 
 # Copiar el script de inicio y darle permisos de ejecución
 COPY entrypoint.sh ./entrypoint.sh
