@@ -3,6 +3,10 @@
 
 generator client {
   provider = "prisma-client-js"
+  // binario del Query Engine para el runtime del contenedor de producción
+  // (node:20-alpine usa linux-musl-openssl-3.0.x; sin esto, Prisma no encuentra
+  //  el engine en producción -> "could not locate the Query Engine").
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
