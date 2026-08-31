@@ -52,12 +52,15 @@ services:
       restart_policy:
         condition: on-failure
     healthcheck:
-      # wget de BusyBox: usar -q y --spider (--no-verbose no existe en busybox)
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      # Healthcheck robusto con node (siempre presente en la imagen). El wget de
+      # BusyBox no soporta todos los flags (-q/--spider/--no-verbose) y podía
+      # marcar el contenedor "unhealthy" de forma falsa (exit 137 = matado por
+      # Swarm). Con node usamos el módulo core http.get: 0 si la API responde 200.
+      test: ["CMD", "node", "-e", "const http=require('http');http.get('http://localhost:3000/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1)).setTimeout(4000,()=>process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 3
-      start_period: 60s
+      start_period: 90s
     depends_on:
       - db
 
