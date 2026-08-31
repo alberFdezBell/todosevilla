@@ -20,12 +20,17 @@ services:
   app:
     image: ghcr.io/alberfdezbell/todosevilla:latest
     environment:
+      # ?schema=public es exclusivo del driver de Prisma. El entrypoint.sh deriva
+      # una URL "libpq-safe" (sin query string) para pg_isready/psql/pg_dump.
       DATABASE_URL: postgresql://${DB_USER:-todosevilla_admin}:${DB_PASSWORD:-todosevilla_secure_pass}@db:5432/${DB_NAME:-todosevilla}?schema=public
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       PORTAINER_WEBHOOK_URL: ${PORTAINER_WEBHOOK_URL}
-      GIT_COMMIT_SHA: ${GIT_COMMIT_SHA}
+      # GIT_COMMIT_SHA se omite a propósito: el SHA real se inyecta en la imagen
+      # durante el build (ARG GIT_COMMIT_SHA en GitHub Actions). Si se redefiniera
+      # aquí (aunque sea como valor vacío) SOBRESCRIBIRÍA al de la imagen y rompería
+      # el comparador de actualizaciones del panel.
       DB_HOST: db
       DB_PORT: 5432
     volumes:

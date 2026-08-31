@@ -93,7 +93,7 @@ git push origin main
 
 Al hacer push a `main`, GitHub Actions se activa automáticamente y:
 - Compila la imagen Docker de la nueva versión.
-- Inyecta el SHA del commit como variable de entorno (`GIT_COMMIT_SHA`).
+- Inyecta el SHA del commit como variable de entorno (`GIT_COMMIT_SHA`), que queda **fijada dentro de la imagen** durante el build (no debe redefinirse desde el stack de Portainer).
 - Publica la imagen en GitHub Container Registry (GHCR) con los tags `latest` y el SHA corto.
 - El proceso tarda aproximadamente **3-5 minutos**.
 
@@ -263,6 +263,20 @@ Comprueba en Portainer que el servicio vuelve a estado `Running` y que el panel 
 1. Verifica que el servicio `db` está en ejecución en Portainer.
 2. Comprueba la variable `DATABASE_URL` en el stack de Portainer.
 3. Si hay un fallo grave, restaura desde el backup automático (ver sección anterior).
+
+### El despliegue falla con `deployment failed: task: non-zero exit (1)`
+
+El mensaje es genérico; hay que mirar los logs del task fallido: `docker service logs <servicio>` (o en Portainer → Stacks → servicio → Tasks → Logs).
+
+| Error en los logs | Causa raíz | Solución |
+|---|---|---|
+| `pg_isready: error: invalid URI query parameter: "schema"` | `pg_isready`/`psql`/`pg_dump` (libpq) no aceptan el parámetro `?schema=public` (es exclusivo del driver de Prisma) | Ya corregido en `entrypoint.sh`: deriva una URL `libpq-safe` con `cut -d'?' -f1` para todas las herramientas libpq. Reconstruir la imagen (push a main). |
+| `host not found in upstream "app"` (nginx) | Con `endpoint_mode: dnsrr`, el DNS de Swarm no publica el nombre `app` hasta que el servicio tiene tareas vivas; nginx resolvía el upstream al arrancar sin variable | Ya corregido en `nginx/nginx.conf`: `resolver 127.0.0.11` + `proxy_pass` con variable (`set $app_upstream`). Reconstruir y redesplegar, o volcar el `nginx.conf` en el host en `/opt/todosevilla/nginx/nginx.conf`. |
+| `ERROR CRÍTICO DE SEGURIDAD: Las variables de entorno ADMIN_EMAIL y ADMIN_PASSWORD...` | `ADMIN_EMAIL`/`ADMIN_PASSWORD` vacías en el stack de Portainer | Definir las variables en el Stack de Portainer → Environment variables. La de `JWT_SECRET` también. |
+| `cannot load certificate key /etc/nginx/certs/server.key` o `Is a directory` | Faltan los certificados o el `nginx.conf` en `/opt/todosevilla/nginx/` del host | Ejecutar el paso 6 de `iniciar_produccion.sh` (genera los certs con OpenSSL) y copiar `nginx/nginx.conf`. |
+| Error de módulo nativo (`bcrypt`/Prisma `was compiled against a different platform`) | Imagen construida desde Windows copiando `node_modules` | Con el nuevo `.dockerignore` ya no ocurre; reconstruir desde GitHub Actions (Linux). |
+
+> ℹ️ Después de estos cambios hay que **reconstruir la imagen** (push a `main` → GitHub Actions publica `ghcr.io/alberfdezbell/todosevilla:latest`) y **redesplegar el stack**, porque el `entrypoint.sh` y el `nginx.conf` viven dentro de la imagen/contenedor.
 
 ---
 

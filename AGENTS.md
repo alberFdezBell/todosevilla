@@ -164,12 +164,13 @@ Portainer descarga ghcr.io/alberfdezbell/todosevilla:latest
    (el webhook de Portainer fuerza un re-pull de `latest` siempre, comparando digest en GHCR)
    → levanta nuevo contenedor (start-first)
    → nuevo contenedor ejecuta entrypoint.sh:
-       1. pg_isready (esperar BD)
+       1. pg_isready (esperar BD) — usando una URL "libpq-safe" SIN el parámetro ?schema=public
+          (ese parámetro es exclusivo del driver de Prisma y hace fallar a pg_isready/psql/pg_dump)
        2. pg_try_advisory_lock(123456) en Postgres para evitar race conditions
           - Si adquiere el lock: comprueba GIT_COMMIT_SHA vs /backups/last_deployed_sha.txt
           - Si NO adquiere el lock (otra réplica lo tiene): espera bloqueado hasta que se libere, luego continúa sin repetir tareas
        3. SI ES DIFERENTE (Actualización):
-          - pg_dump → /backups/backup_TIMESTAMP.sql
+          - pg_dump (URL libpq-safe) → /backups/backup_TIMESTAMP.sql
           - Conservar solo los últimos 10 backups (.sql) y borrar el resto
           - npx prisma migrate deploy
           - node prisma/seed.js (check-first: no duplica admin ni documentos ya editados)
@@ -248,3 +249,6 @@ El panel en `/panel` está protegido por una **barrera física de red en Nginx**
 8. **`ADMIN_PASSWORD` no tiene valor por defecto**. Si se omite la variable en el stack, el seed lanza un error y el contenedor sale con código 1 (Swarm hace rollback). La contraseña temporal del seed activa `mustChangePassword: true`, que obliga al cambio en el primer login antes de poder usar el panel.
 9. **Advisory lock de Postgres** (ID `123456`): el `entrypoint.sh` usa `pg_try_advisory_lock` para garantizar que solo un contenedor ejecuta migraciones y backup simultáneamente. No modificar este mecanismo sin revisar las implicaciones en escenarios de rollback.
 10. **Configuración de Red Swarm (dnsrr) en Proxmox**: Se utiliza `endpoint_mode: dnsrr` en los servicios `db` y `app` para prevenir problemas de enrutamiento de IPVS (IP Virtual Server) dentro de la red overlay del kernel de Linux, habituales en contenedores LXC de Proxmox. No cambiar a VIP sin validar antes la estabilidad de red.
+11. **`?schema=public` solo lo entiende Prisma**: las herramientas `libpq` (`pg_isready`, `psql`, `pg_dump`) fallan con `invalid URI query parameter`. El `entrypoint.sh` deriva `LIBPQ_URL` quitando la query string con `cut -d'?' -f1` y usa esa URL para todo lo que no sea Prisma. No devolver el `?schema=public` a esas llamadas.
+12. **`nginx.conf` resuelve `app` en runtime**: se usa `resolver 127.0.0.11` + `proxy_pass` con variable (`set $app_upstream`) porque con `endpoint_mode: dnsrr` el DNS de Swarm solo publica el nombre del servicio cuando tiene tareas vivas. No volver al `proxy_pass http://app:3000;` literal sin resolver, o nginx abortará con `host not found in upstream` en arranques en caliente.
+13. **`GIT_COMMIT_SHA` no tiene que redefinirse en el compose**: la variable se inyecta como ENV en la imagen durante el build (ARG GIT_COMMIT_SHA desde GitHub Actions). Definirla en el stack de Portainer (aunque sea vacía) sobrescribe el valor de la imagen y rompe el comparador de actualizaciones del panel.

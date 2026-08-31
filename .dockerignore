@@ -1,0 +1,32 @@
+# Dependencias y builds (evita subir node_modules de Windows a la imagen)
+node_modules
+.next
+out
+build
+
+# Entornos y secretos locales (¡evita cocinar el .env dentro de las capas de GHCR!)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
+
+# Control de versiones y herramientas
+.git
+.github
+.obsidian
+
+# Despliegue / configuraciones locales
+docker-compose.yml
+docker-compose.dev.yml
+Dockerfile
+iniciar_produccion.sh
+nginx/nginx.conf
+
+# Logs y temporales
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
