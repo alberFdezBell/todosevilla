@@ -18,6 +18,8 @@ ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN npx prisma generate
+# Generar de nuevo el cliente en el build para incluir el engine de linux-musl-openssl-3.0.x
+RUN npx prisma generate --schema=./prisma/schema.prisma
 RUN npm run build
 
 # Etapa 3: Ejecución
