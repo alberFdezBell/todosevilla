@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db, ensureBusinessScheduleCompatibility } from "@/lib/db";
 import { recordVisit } from "@/lib/analytics";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -15,6 +15,8 @@ interface BusinessPageProps {
 
 // Cargar SEO dinámico para el negocio
 export async function generateMetadata({ params }: BusinessPageProps): Promise<Metadata> {
+  await ensureBusinessScheduleCompatibility();
+
   const business = await db.business.findUnique({
     where: { slug: params.business_slug },
     include: { zone: true, category: true }
@@ -31,6 +33,8 @@ export async function generateMetadata({ params }: BusinessPageProps): Promise<M
 }
 
 export default async function BusinessPage({ params }: BusinessPageProps) {
+  await ensureBusinessScheduleCompatibility();
+
   const { zone_slug, business_slug } = params;
 
   // Obtener detalles del negocio

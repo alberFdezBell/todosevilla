@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db, ensureBusinessScheduleCompatibility } from "@/lib/db";
 import { recordVisit } from "@/lib/analytics";
 import Link from "next/link";
 
@@ -12,6 +12,8 @@ interface BuscarPageProps {
 }
 
 export default async function BuscarPage({ searchParams }: BuscarPageProps) {
+  await ensureBusinessScheduleCompatibility();
+
   const { q, cat } = searchParams;
 
   // Registrar visita para analítica

@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db, ensureBusinessScheduleCompatibility } from "@/lib/db";
 import { recordVisit } from "@/lib/analytics";
 import SearchForm from "@/components/SearchForm";
 import Link from "next/link";
@@ -6,6 +6,8 @@ import Link from "next/link";
 export const dynamic = "force-dynamic"; // Dinámico para registrar visitas en cada petición
 
 export default async function HomePage() {
+  await ensureBusinessScheduleCompatibility();
+
   // Registrar la visita a la landing principal
   await recordVisit({ path: "/" });
 

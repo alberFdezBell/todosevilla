@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db, ensureBusinessScheduleCompatibility } from "@/lib/db";
 import { recordVisit } from "@/lib/analytics";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -18,6 +18,8 @@ interface ZonePageProps {
 
 // Cargar SEO dinámico para la zona
 export async function generateMetadata({ params }: ZonePageProps): Promise<Metadata> {
+  await ensureBusinessScheduleCompatibility();
+
   const zone = await db.zone.findUnique({
     where: { slug: params.zone_slug },
   });
@@ -31,6 +33,8 @@ export async function generateMetadata({ params }: ZonePageProps): Promise<Metad
 }
 
 export default async function ZonePage({ params, searchParams }: ZonePageProps) {
+  await ensureBusinessScheduleCompatibility();
+
   const { zone_slug } = params;
   const { q, cat } = searchParams;
 

@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db, ensureBusinessScheduleCompatibility } from "@/lib/db";
 import UpdateManager from "@/components/UpdateManager";
 import Link from "next/link";
 
@@ -13,6 +13,8 @@ interface DashboardPageProps {
 export const revalidate = 0; // El panel nunca debe cachearse, siempre muestra datos en vivo
 
 export default async function PanelPage({ searchParams }: DashboardPageProps) {
+  await ensureBusinessScheduleCompatibility();
+
   const currentYear = new Date().getFullYear();
   
   // Parsea parámetros de filtro, por defecto vacío (muestra histórico completo)

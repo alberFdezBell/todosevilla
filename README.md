@@ -27,6 +27,21 @@ Para una guía paso a paso detallada (incluyendo preparación de VM, Cloudflare 
 
 > ℹ️ **Proxy autosuficiente**: el servicio `proxy` usa la imagen `ghcr.io/alberfdezbell/todosevilla-proxy` (construida desde `nginx/`), que incluye la configuración de Nginx corregida (resolver dinámico de Swarm) y **genera sus propios certificados SSL autofirmados en el arranque** si no existen (guardados en el volumen `proxy_certs`). Ya **no depende** del `nginx.conf` ni de los certificados que `iniciar_produccion.sh` creaba en `/opt/todosevilla/nginx/`. Para regenerar los certificados manualmente: `docker volume rm todosevilla_proxy_certs` (con el stack detenido o tras re-desplegar) y vuelve a desplegar.
 
+> 🌐 **Origen del túnel de Cloudflare**: en Cloudflare Zero Trust → Public Hostname, el *Service* del subdominio `todosevilla.aferbel.es` debe apuntar a **`http://proxy:80`** (el servidor nginx público del stack). Esa es la configuración correcta y documentada — **no usar** `http://app:3000` directo ni `localhost`.
+
+### Diagnóstico rápido de `Application error`
+
+Si la landing pública responde con `## Application error: a server-side exception has occurred` y el digest apunta a un fallo de Prisma al leer negocios, lo más habitual es una deriva de esquema en PostgreSQL: la columna antigua `Business.hours` aún existe pero la app ya espera `Business.schedule`.
+
+En ese caso, la solución es aplicar la migración de corrección:
+
+```sql
+ALTER TABLE "Business" RENAME COLUMN "hours" TO "schedule";
+ALTER TABLE "Business" ALTER COLUMN "published" SET DEFAULT true;
+```
+
+La aplicación incluye además una comprobación defensiva al arrancar para auto-corregir ese estado heredado antes de que Prisma ejecute consultas de negocio.
+
 ---
 
 ## Inicio Rápido — Entorno de Desarrollo (Windows)
@@ -276,8 +291,21 @@ El mensaje es genérico; hay que mirar los logs del task fallido: `docker servic
 | `host not found in upstream "app"` (nginx) | Con `endpoint_mode: dnsrr`, el DNS de Swarm no publica el nombre `app` hasta que el servicio tiene tareas vivas; nginx resolvía el upstream al arrancar sin variable | Corregido de forma permanente en la imagen `todosevilla-proxy` (lleva su propio `nginx.conf` con `resolver 127.0.0.11` + `proxy_pass` con variable). Actualiza el stack a la imagen nueva. |
 | `ERROR CRÍTICO DE SEGURIDAD: Las variables de entorno ADMIN_EMAIL y ADMIN_PASSWORD...` | `ADMIN_EMAIL`/`ADMIN_PASSWORD` vacías en el stack de Portainer | Definir las variables en el Stack de Portainer → Environment variables. La de `JWT_SECRET` también. |
 | `cannot load certificate key /etc/nginx/certs/server.key` o `Is a directory` | Faltan los certificados o el `nginx.conf` en `/opt/todosevilla/nginx/` del host | Ya no aplica: la imagen `todosevilla-proxy` genera sus propios certificados autofirmados en el arranque. Solo aparece si el stack sigue usando el compose antiguo con los mounts del host. |
+| `exit (137): dockerexec: unhealthy container` (app) | El healthcheck marcó el contenedor como "unhealthy" y Swarm lo eliminó (SIGKILL). Causas típicas: (a) la imagen desplegada aún lleva el `entrypoint.sh` antiguo (bucle `pg_isready`, `server.js` nunca arranca) o (b) el healthcheck usado flags que BusyBox no soporta (`--no-verbose`) | Corregido: healthcheck ahora con `node` + `http.get` (robusto en la imagen de la app). Además, **reconstruir la imagen** con el `entrypoint.sh` nuevo. Diagnóstico: `docker service logs todosevilla_app --tail 100` (busca "Iniciando servidor de Next.js..." o el bucle de pg_isready) y `docker inspect <container_id> --format '{{json .State.Health}}'`. |
+| `Authentication failed against database server at 'db', the provided database credentials for 'todosevilla_admin' are not valid` | Las credenciales guardadas en el volumen `pgdata` no coinciden con las que usa el `app`. Postgres solo aplica `POSTGRES_PASSWORD` la primera vez que se inicializa el volumen | Alinear credenciales: recrear el volumen de la BD (`docker stack rm todosevilla` + `docker volume rm todosevilla_pgdata` + redeploy) o usar la misma contraseña con la que se creó el volumen. Verificar con: `docker exec <db> sh -c 'PGPASSWORD=todosevilla_secure_pass psql -h 127.0.0.1 -U todosevilla_admin -d todosevilla -tAc "select 1"'`. |
+| `Prisma Client could not locate the Query Engine for runtime "linux-musl-openssl-3.0.x"` | El `prisma generate` no incluyó el binario del Query Engine para Alpine (`linux-musl-openssl-3.0.x`), solo `native` | Corregido: `binaryTargets` en `schema.prisma` añade `linux-musl-openssl-3.0.x` y el Dockerfile re-genera el cliente en el build. Reconstruir la imagen (push a main). |
+| `Application error: a server-side exception has occurred` + `Digest` en la web pública (`/`, `/zona`, `/zona/negocio`) mientras `/api/health` responde 200 | Deriva entre `schema.prisma` y las migraciones: `Business` usa el campo `schedule`, pero la migración `20260831000000_init` creó la columna `hours`. El cliente Prisma genera `SELECT "Business"."schedule"` → la BD no tiene esa columna → P2022 en cualquier consulta de negocios. El healthcheck pasa porque solo ejecuta `SELECT 1` | Corregido con la migración nueva `20260831000002_rename_hours_to_schedule` (renombra `hours` → `schedule` con datos intactos y alinea el default de `published`). Desplegar la imagen nueva (push a main → GH Actions → webhook/redespliegue del stack) para que el `entrypoint.sh` ejecute `migrate deploy`. |
+| `Cannot find module '@prisma/internals'` o error al ejecutar "Ejecutando migraciones de Prisma..." | El runner standalone no incluía las dependencias transitivas del CLI de Prisma (el cherry-pick de `node_modules/prisma` + `@prisma` no basta) | Corregido en el Dockerfile: se copia `node_modules` **completo** desde la etapa `deps`. Reconstruir la imagen (push a main). |
+| `502 Bad Gateway` en `https://todosevilla.aferbel.es` (pública) | La cadena túnel → nginx → app se corta: el nginx del proxy no llega a `app:3000`, o el túnel de cloudflared no llega a `proxy:80`. El origen del túnel debe ser `http://proxy:80` (ver nota de despliegue). | Diagnóstico rápido (en el servidor): `docker exec <id_proxy> wget -qO- http://app:3000/api/health` (¿responde?) y `docker exec <id_tunnel> wget -qO- http://proxy:80/api/health`. Forzar la imagen nueva del proxy: `docker service update --force --image ghcr.io/alberfdezbell/todosevilla-proxy:latest todosevilla_proxy`. |
+| `tunnel`: `dial tcp 10.0.x.x:80: i/o timeout` (bad gateway) | El routing mesh/IPVS de Swarm no enruta el tráfico entre servicios en LXC de Proxmox. El túnel no llega al VIP del `proxy`. | Corregido: `proxy` usa `endpoint_mode: dnsrr` + `ports` `mode: host` (como `db` y `app`). Asegúrate de que el stack usa el compose con esa configuración (force-pull de las imágenes y redeploy). |
 | Error de módulo nativo (`bcrypt`/Prisma `was compiled against a different platform`) | Imagen construida desde Windows copiando `node_modules` | Con el nuevo `.dockerignore` ya no ocurre; reconstruir desde GitHub Actions (Linux). |
 
+> 🛠️ **Si la app falla por autenticación de BD** (`Authentication failed ... are not valid`) pero el `db` declara las mismas credenciales que la app, lo que pasa es que el volumen `pgdata` se inicializó en su día con otra contraseña. Para alinear la contraseña del rol **sin borrar datos**:
+> ```bash
+> DB=$(docker ps -q -f name=todosevilla_db)
+> docker exec "$DB" psql -U postgres -c "ALTER USER todosevilla_admin WITH PASSWORD 'todosevilla_secure_pass';"
+> ```
+> Alternativa (si no importan los datos): `docker stack rm todosevilla` + `docker volume rm todosevilla_pgdata` + redesplegar.
 > ℹ️ Después de estos cambios hay que **reconstruir la imagen** (push a `main` → GitHub Actions publica `ghcr.io/alberfdezbell/todosevilla:latest`) y **redesplegar el stack**, porque el `entrypoint.sh` y el `nginx.conf` viven dentro de la imagen/contenedor.
 
 ---

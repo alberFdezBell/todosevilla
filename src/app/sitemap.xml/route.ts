@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db, ensureBusinessScheduleCompatibility } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +8,8 @@ export const dynamic = "force-dynamic";
  * Esto es fundamental para el SEO local del directorio.
  */
 export async function GET() {
+  await ensureBusinessScheduleCompatibility();
+
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://todosevilla.aferbel.es";
 
   // Obtener zonas y negocios publicados
