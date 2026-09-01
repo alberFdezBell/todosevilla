@@ -88,6 +88,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Obsidian (configuración personal del editor de notas, no es código del proyecto)
+.obsidian/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
