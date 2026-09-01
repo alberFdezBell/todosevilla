@@ -16,7 +16,7 @@ export default function SearchForm({ zones, categories }: SearchFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const params = new URLSearchParams();
     if (query.trim()) params.append("q", query.trim());
     if (selectedCategory) params.append("cat", selectedCategory);
@@ -30,27 +30,78 @@ export default function SearchForm({ zones, categories }: SearchFormProps) {
     }
   };
 
+  const inputStyle = {
+    width: "100%",
+    padding: "10px 14px",
+    background: "#fff",
+    border: "1px solid #d7e0ea",
+    borderRadius: "10px",
+    fontSize: ".9rem",
+    color: "#1f2937",
+    outline: "none",
+    transition: "border-color .15s ease, box-shadow .15s ease",
+    minHeight: "42px",
+  } as React.CSSProperties;
+
+  const labelStyle = {
+    fontSize: ".72rem",
+    fontWeight: 800,
+    color: "#516173",
+    textTransform: "uppercase" as const,
+    letterSpacing: ".06em",
+    marginBottom: "4px",
+    display: "block",
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow-lg border border-slate-100 flex flex-col md:flex-row gap-4 w-full max-w-4xl mx-auto -mt-10 relative z-10">
-      <div className="flex-1 flex flex-col gap-1">
-        <label className="text-xs font-semibold text-slate-500 uppercase px-1">¿Qué buscas?</label>
+    <form
+      onSubmit={handleSubmit}
+      className="flex flex-col md:flex-row gap-4 w-full max-w-4xl mx-auto -mt-10 relative z-10"
+      style={{
+        background: "#fff",
+        border: "1px solid #d7e0ea",
+        borderRadius: "16px",
+        boxShadow: "0 10px 30px rgba(0,0,0,.10)",
+        padding: "20px 24px",
+      }}
+    >
+      {/* ¿Qué buscas? */}
+      <div className="flex-1 flex flex-col">
+        <label style={labelStyle}>¿Qué buscas?</label>
         <input
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Papelería, restaurante, fontanero..."
-          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm text-slate-800"
+          style={inputStyle}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = "#f3d044";
+            e.currentTarget.style.boxShadow = "0 0 0 3px rgba(243,208,68,.2)";
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = "#d7e0ea";
+            e.currentTarget.style.boxShadow = "none";
+          }}
         />
       </div>
 
-      <div className="md:w-60 flex flex-col gap-1">
-        <label className="text-xs font-semibold text-slate-500 uppercase px-1">¿En qué zona?</label>
+      {/* ¿En qué zona? */}
+      <div className="md:w-56 flex flex-col">
+        <label style={labelStyle}>¿En qué zona?</label>
         <select
           value={selectedZone}
           onChange={(e) => setSelectedZone(e.target.value)}
-          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm text-slate-800"
+          style={inputStyle}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = "#f3d044";
+            e.currentTarget.style.boxShadow = "0 0 0 3px rgba(243,208,68,.2)";
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = "#d7e0ea";
+            e.currentTarget.style.boxShadow = "none";
+          }}
         >
-          <option value="">Toda la provincia (Sevilla)</option>
+          <option value="">Toda la zona</option>
           {zones.map((zone) => (
             <option key={zone.id} value={zone.slug}>
               {zone.name}
@@ -59,12 +110,21 @@ export default function SearchForm({ zones, categories }: SearchFormProps) {
         </select>
       </div>
 
-      <div className="md:w-60 flex flex-col gap-1">
-        <label className="text-xs font-semibold text-slate-500 uppercase px-1">Categoría</label>
+      {/* Categoría */}
+      <div className="md:w-52 flex flex-col">
+        <label style={labelStyle}>Categoría</label>
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition text-sm text-slate-800"
+          style={inputStyle}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = "#f3d044";
+            e.currentTarget.style.boxShadow = "0 0 0 3px rgba(243,208,68,.2)";
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = "#d7e0ea";
+            e.currentTarget.style.boxShadow = "none";
+          }}
         >
           <option value="">Cualquier categoría</option>
           {categories.map((cat) => (
@@ -75,10 +135,28 @@ export default function SearchForm({ zones, categories }: SearchFormProps) {
         </select>
       </div>
 
+      {/* Botón buscar */}
       <div className="flex items-end">
         <button
           type="submit"
-          className="w-full md:w-auto px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition text-sm shadow-md shadow-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          style={{
+            background: "#111",
+            color: "#fff",
+            fontWeight: 800,
+            fontSize: ".9rem",
+            padding: "10px 28px",
+            borderRadius: "10px",
+            border: "none",
+            cursor: "pointer",
+            minHeight: "42px",
+            whiteSpace: "nowrap",
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.background = "#333";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.background = "#111";
+          }}
         >
           Buscar
         </button>
