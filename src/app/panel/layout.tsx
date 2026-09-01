@@ -8,13 +8,13 @@ const JWT_SECRET = process.env.JWT_SECRET || "un_secreto_super_seguro_y_largo_pa
 const key = new TextEncoder().encode(JWT_SECRET);
 
 const NAV_ITEMS = [
-  { href: "/panel",               icon: "📊", label: "Estadísticas" },
-  { href: "/panel/negocios",      icon: "💼", label: "Negocios" },
-  { href: "/panel/zonas",         icon: "📍", label: "Zonas" },
-  { href: "/panel/categorias",    icon: "🏷️",  label: "Categorías" },
-  { href: "/panel/documentos",    icon: "⚖️",  label: "Textos Legales" },
-  { href: "/panel/usuarios",      icon: "👥", label: "Usuarios" },
-  { href: "/panel/documentacion", icon: "📖", label: "Documentación" },
+  { href: "/panel",              icon: "📊", label: "Estadísticas" },
+  { href: "/panel/negocios",     icon: "💼", label: "Negocios" },
+  { href: "/panel/zonas",        icon: "📍", label: "Zonas" },
+  { href: "/panel/categorias",   icon: "🏷️",  label: "Categorías" },
+  { href: "/panel/documentos",   icon: "⚖️",  label: "Textos Legales" },
+  { href: "/panel/usuarios",     icon: "👥", label: "Usuarios" },
+  { href: "/panel/documentacion",icon: "📖", label: "Documentación" },
 ];
 
 export default async function PanelLayout({
@@ -42,71 +42,93 @@ export default async function PanelLayout({
   }
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "linear-gradient(135deg,#f4f6f9 0%,#f0f2f5 100%)" }}>
+    <div className="flex min-h-screen" style={{ background: "linear-gradient(135deg, #f4f6f9 0%, #f0f2f5 100%)" }}>
 
-      {/* ── Sidebar (solo escritorio) ── */}
+      {/* ── Sidebar de Navegación del Panel ── */}
       <aside
-        className="hidden lg:flex"
+        className="hidden lg:flex flex-col w-64 flex-shrink-0 py-4 px-3"
         style={{
-          width: "256px",
-          flexShrink: 0,
-          flexDirection: "column",
-          padding: "16px 12px",
-          background: "linear-gradient(180deg,#1f1f1f 0%,#232323 100%)",
+          background: "linear-gradient(180deg, #1f1f1f 0%, #232323 100%)",
           boxShadow: "4px 0 18px rgba(0,0,0,.18)",
           minHeight: "100vh",
           position: "sticky",
           top: 0,
+          alignSelf: "flex-start",
           height: "100vh",
         }}
       >
         {/* Brand */}
-        <div style={{ paddingBottom: "16px", marginBottom: "8px", borderBottom: "1px solid rgba(255,255,255,.08)" }}>
-          <p style={{ fontSize: ".65rem", fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.45)", lineHeight: 1, margin: 0 }}>
-            Administración
-          </p>
-          <h2 style={{ fontSize: "1rem", fontWeight: 800, color: "#fff", margin: "4px 0 0" }}>
-            ⚙️ Todo Castilblanco
-          </h2>
+        <div
+          className="flex items-center gap-2 pb-4 mb-2"
+          style={{ borderBottom: "1px solid rgba(255,255,255,.08)" }}
+        >
+          <span style={{ fontSize: "1.3rem" }}>⚙️</span>
+          <div>
+            <p style={{ fontSize: ".65rem", fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.45)", lineHeight: 1 }}>
+              Administración
+            </p>
+            <h2 style={{ fontSize: "1rem", fontWeight: 800, color: "#fff", margin: 0, lineHeight: 1.3 }}>
+              Todo Castilblanco
+            </h2>
+          </div>
         </div>
 
-        {/* Navegación — hover amarillo definido en globals.css (.panel-nav-link) */}
-        <nav style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1, marginTop: "8px" }}>
+        {/* Navegación */}
+        <nav className="flex flex-col gap-1.5 flex-1 mt-2">
           {NAV_ITEMS.map((item) => (
-            <Link key={item.href} href={item.href} className="panel-nav-link">
+            <Link
+              key={item.href}
+              href={item.href}
+              className="panel-nav-link flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-sm font-semibold transition-all duration-150"
+              style={{ color: "#fff", textDecoration: "none" }}
+            >
               <span>{item.icon}</span>
               <span>{item.label}</span>
             </Link>
           ))}
         </nav>
 
-        {/* Logout */}
-        <div style={{ marginTop: "auto", paddingTop: "16px", borderTop: "1px solid rgba(255,255,255,.08)" }}>
+        <div
+          className="mt-auto pt-4"
+          style={{ borderTop: "1px solid rgba(255,255,255,.08)" }}
+        >
           <LogoutButton />
         </div>
       </aside>
 
-      {/* ── Contenido principal ── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-
-        {/* Top bar móvil */}
         <div
-          className="lg:hidden"
-          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "#1f1f1f", borderBottom: "1px solid rgba(255,255,255,.08)" }}
+          className="lg:hidden flex items-center justify-between px-4 py-3"
+          style={{ background: "#1f1f1f", borderBottom: "1px solid rgba(255,255,255,.08)" }}
         >
-          <span style={{ color: "#fff", fontWeight: 700, fontSize: ".875rem" }}>⚙️ Todo Castilblanco · Admin</span>
-          <div style={{ display: "flex", gap: "8px" }}>
-            {NAV_ITEMS.slice(0, 5).map((item) => (
-              <Link key={item.href} href={item.href} style={{ color: "#fff", fontSize: ".875rem", padding: "4px 6px", borderRadius: "8px" }} title={item.label}>
+          <span className="text-white font-bold text-sm">⚙️ Todo Castilblanco · Admin</span>
+          {/* Nav móvil simplificada */}
+          <div className="flex gap-2">
+            {NAV_ITEMS.slice(0, 4).map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="p-1.5 rounded-lg text-sm"
+                style={{ color: "#fff" }}
+                title={item.label}
+              >
                 {item.icon}
               </Link>
             ))}
           </div>
         </div>
 
-        {/* Área de contenido */}
-        <main style={{ flex: 1, padding: "24px 32px" }}>
-          <div style={{ background: "#fff", border: "1px solid #dde2ea", borderRadius: "16px", boxShadow: "0 1px 8px rgba(0,0,0,.06)", padding: "32px" }}>
+        <main
+          className="flex-1 p-6 md:p-8"
+          style={{ background: "transparent" }}
+        >
+          <div
+            className="w-full rounded-2xl p-6 md:p-8"
+            style={{
+              background: "#fff",
+              border: "1px solid #dde2ea",
+              boxShadow: "0 1px 8px rgba(0,0,0,.06)",
+            }}
+          >
             {children}
           </div>
         </main>

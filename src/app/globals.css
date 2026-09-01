@@ -94,6 +94,64 @@ a:focus-visible {
 /* Compat: mantener header-gradient para código existente que no se migre */
 .header-gradient {
   background: var(--ux-brand);
+
+}
+
+button, .btn {
+  transition: transform .16s ease, box-shadow .16s ease, background-color .16s ease, filter .16s ease;
+}
+
+/* ── Focus visible accesible ── */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 3px solid rgba(11,103,209,.35);
+  outline-offset: 2px;
+}
+
+/* ── Header de la app: amarillo dorado ── */
+.header-brand {
+  background: var(--ux-brand);
+  border-bottom: 1px solid rgba(0,0,0,.08);
+  box-shadow: 0 2px 10px rgba(0,0,0,.08);
+}
+
+/* ── Footer de la app: amarillo dorado ── */
+.footer-brand {
+  background: var(--ux-brand);
+  border-top: 1px solid rgba(0,0,0,.08);
+}
+
+/* ── Hero section: amarillo ── */
+.hero-brand {
+  background: var(--ux-brand);
+  border-bottom: none;
+}
+
+/* ── Chip/badge de categoría estilo referencia ── */
+.badge-brand {
+  display: inline-flex;
+  align-items: center;
+  font-size: .78rem;
+  font-weight: 800;
+  color: #34495e;
+  background: var(--ux-brand-soft);
+  border: 1px solid var(--ux-brand-border);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+/* ── Sidebar del panel admin ── */
+.admin-sidebar {
+  background: linear-gradient(180deg, #1f1f1f 0%, #232323 100%);
+  box-shadow: 4px 0 18px rgba(0,0,0,.18);
+}
+
+/* Compat: mantener header-gradient para código existente que no se migre */
+.header-gradient {
+  background: var(--ux-brand);
 }
 
 /* ── Cards de zonas y negocios (hover via CSS, sin event handlers) ── */
