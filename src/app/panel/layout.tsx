@@ -7,6 +7,16 @@ import PasswordChangeRequired from "./PasswordChangeRequired";
 const JWT_SECRET = process.env.JWT_SECRET || "un_secreto_super_seguro_y_largo_para_firmar_los_tokens_jwt_12345";
 const key = new TextEncoder().encode(JWT_SECRET);
 
+const NAV_ITEMS = [
+  { href: "/panel",               icon: "📊", label: "Estadísticas" },
+  { href: "/panel/negocios",      icon: "💼", label: "Negocios" },
+  { href: "/panel/zonas",         icon: "📍", label: "Zonas" },
+  { href: "/panel/categorias",    icon: "🏷️",  label: "Categorías" },
+  { href: "/panel/documentos",    icon: "⚖️",  label: "Textos Legales" },
+  { href: "/panel/usuarios",      icon: "👥", label: "Usuarios" },
+  { href: "/panel/documentacion", icon: "📖", label: "Documentación" },
+];
+
 export default async function PanelLayout({
   children,
 }: {
@@ -32,75 +42,75 @@ export default async function PanelLayout({
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8 pb-12">
-      {/* Sidebar de Navegación del Panel */}
-      <aside className="w-full lg:w-64 bg-slate-900 text-white rounded-3xl p-6 shadow-xl flex flex-col gap-6 self-start">
-        <div className="border-b border-slate-800 pb-4">
-          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Modo Administrador</p>
-          <h2 className="text-xl font-bold text-white mt-1">⚙️ Todo Sevilla</h2>
+    <div style={{ display: "flex", minHeight: "100vh", background: "linear-gradient(135deg,#f4f6f9 0%,#f0f2f5 100%)" }}>
+
+      {/* ── Sidebar (solo escritorio) ── */}
+      <aside
+        className="hidden lg:flex"
+        style={{
+          width: "256px",
+          flexShrink: 0,
+          flexDirection: "column",
+          padding: "16px 12px",
+          background: "linear-gradient(180deg,#1f1f1f 0%,#232323 100%)",
+          boxShadow: "4px 0 18px rgba(0,0,0,.18)",
+          minHeight: "100vh",
+          position: "sticky",
+          top: 0,
+          height: "100vh",
+        }}
+      >
+        {/* Brand */}
+        <div style={{ paddingBottom: "16px", marginBottom: "8px", borderBottom: "1px solid rgba(255,255,255,.08)" }}>
+          <p style={{ fontSize: ".65rem", fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: "rgba(255,255,255,.45)", lineHeight: 1, margin: 0 }}>
+            Administración
+          </p>
+          <h2 style={{ fontSize: "1rem", fontWeight: 800, color: "#fff", margin: "4px 0 0" }}>
+            ⚙️ Todo Castilblanco
+          </h2>
         </div>
 
-        <nav className="flex flex-col gap-1">
-          <Link 
-            href="/panel" 
-            className="px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-white/10 transition flex items-center gap-2"
-          >
-            📊 Estadísticas
-          </Link>
-          
-          <Link 
-            href="/panel/negocios" 
-            className="px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-white/10 transition flex items-center gap-2"
-          >
-            💼 Negocios
-          </Link>
-
-          <Link 
-            href="/panel/zonas" 
-            className="px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-white/10 transition flex items-center gap-2"
-          >
-            📍 Zonas
-          </Link>
-
-          <Link 
-            href="/panel/categorias" 
-            className="px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-white/10 transition flex items-center gap-2"
-          >
-            🏷️ Categorías
-          </Link>
-
-          <Link 
-            href="/panel/documentos" 
-            className="px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-white/10 transition flex items-center gap-2"
-          >
-            ⚖️ Textos Legales
-          </Link>
-
-          <Link 
-            href="/panel/usuarios" 
-            className="px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-white/10 transition flex items-center gap-2"
-          >
-            👥 Usuarios
-          </Link>
-
-          <Link 
-            href="/panel/documentacion" 
-            className="px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-white/10 transition flex items-center gap-2"
-          >
-            📖 Documentación
-          </Link>
+        {/* Navegación — hover amarillo definido en globals.css (.panel-nav-link) */}
+        <nav style={{ display: "flex", flexDirection: "column", gap: "4px", flex: 1, marginTop: "8px" }}>
+          {NAV_ITEMS.map((item) => (
+            <Link key={item.href} href={item.href} className="panel-nav-link">
+              <span>{item.icon}</span>
+              <span>{item.label}</span>
+            </Link>
+          ))}
         </nav>
 
-        <div className="border-t border-slate-800 pt-4 mt-auto">
-          {/* Botón Logout */}
+        {/* Logout */}
+        <div style={{ marginTop: "auto", paddingTop: "16px", borderTop: "1px solid rgba(255,255,255,.08)" }}>
           <LogoutButton />
         </div>
       </aside>
 
-      {/* Contenido Principal */}
-      <section className="flex-1 w-full bg-white rounded-3xl border border-slate-200 shadow-sm p-6 md:p-8">
-        {children}
-      </section>
+      {/* ── Contenido principal ── */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+
+        {/* Top bar móvil */}
+        <div
+          className="lg:hidden"
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "#1f1f1f", borderBottom: "1px solid rgba(255,255,255,.08)" }}
+        >
+          <span style={{ color: "#fff", fontWeight: 700, fontSize: ".875rem" }}>⚙️ Todo Castilblanco · Admin</span>
+          <div style={{ display: "flex", gap: "8px" }}>
+            {NAV_ITEMS.slice(0, 5).map((item) => (
+              <Link key={item.href} href={item.href} style={{ color: "#fff", fontSize: ".875rem", padding: "4px 6px", borderRadius: "8px" }} title={item.label}>
+                {item.icon}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Área de contenido */}
+        <main style={{ flex: 1, padding: "24px 32px" }}>
+          <div style={{ background: "#fff", border: "1px solid #dde2ea", borderRadius: "16px", boxShadow: "0 1px 8px rgba(0,0,0,.06)", padding: "32px" }}>
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

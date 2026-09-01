@@ -1,6 +1,11 @@
 #!/bin/sh
 set -e
 
+# Garantizar que el working directory siempre es /app (ruta base del servidor Next.js)
+# Aunque el WORKDIR del Dockerfile ya lo establece, lo forzamos aquí por seguridad
+# para que ningún 'cd' posterior pueda romper las rutas relativas de node/prisma.
+cd /app
+
 echo "Iniciando contenedor de Todo Sevilla..."
 
 # ---------------------------------------------------------------------------
@@ -89,6 +94,8 @@ if [ "$LOCKED" = "t" ]; then
         cd /backups
         ls -1t backup_*.sql 2>/dev/null | tail -n +11 | while read -r f; do rm -f -- "$f"; done || true
         echo "Limpieza de backups antiguos completada."
+        # Volver al directorio de la app para que las rutas relativas de Prisma sean correctas
+        cd /app
       else
         echo "ATENCIÓN: El backup automático ha fallado. Por seguridad se cancela el despliegue."
         exit 1
@@ -98,20 +105,18 @@ if [ "$LOCKED" = "t" ]; then
     fi
 
     # Ejecutar las migraciones (Prisma usa $DATABASE_URL original con ?schema=public)
-    # Se invoca el CLI directamente (node .../prisma/build/index.js) porque el
-    # runner standalone no incluye node_modules/.bin/prisma y npx intentaría
-    # descargarlo de internet en tiempo de ejecución.
+    # Ruta ABSOLUTA al CLI de Prisma: aunque haya un 'cd' previo, /app es siempre fijo.
     echo "Ejecutando migraciones de Prisma..."
-    if node ./node_modules/prisma/build/index.js migrate deploy; then
+    if node /app/node_modules/prisma/build/index.js migrate deploy; then
       echo "Migraciones aplicadas con éxito."
     else
       echo "ERROR: Las migraciones de base de datos han fallado. Abortando despliegue."
       exit 1
     fi
 
-    # Ejecutar el seed
+    # Ejecutar el seed (ruta absoluta)
     echo "Ejecutando seed..."
-    node prisma/seed.js
+    node /app/prisma/seed.js
 
     # Guardar el SHA del despliegue exitoso
     if [ "$CURRENT_SHA" != "unknown" ]; then
@@ -123,10 +128,10 @@ else
   echo "Otra réplica está ejecutando el pre-despliegue. Esperando a que finalice..."
   # Se bloquea esperando el lock. Cuando se libera, significa que la otra réplica ha terminado.
   # El trap EXIT liberará este lock al terminar el script.
-  psql -d "$LIBPQ_URL" -c "SELECT pg_advisory_lock($LOCK_ID);" >/dev/null 2>&1 || true
+  psql -d "$LIBPQ_URL" -c "SELECT pg_advisory_lock($LOCK_ID);" > /dev/null 2>&1 || true
   echo "Lock liberado por la otra réplica. Continuando."
 fi
 
-# Iniciar la aplicación en producción
+# Iniciar la aplicación en producción (ruta absoluta)
 echo "Iniciando servidor de Next.js..."
-exec node server.js
+exec node /app/server.js

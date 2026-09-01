@@ -190,6 +190,14 @@
   },
   "active": "bc7fba1702a2b010",
   "lastOpenFiles": [
+    "node_modules/prisma/libquery_engine-linux-musl-openssl-3.0.x.so.node",
+    "node_modules/prisma/libquery_engine-linux-musl-openssl-3.0.x.so.node.tmp20404",
+    "_readme_num.txt",
+    "_agents_num.txt",
+    "_orig_readme.md",
+    "_orig_agents.md",
+    "prisma/migrations/20260831000002_rename_hours_to_schedule/migration.sql",
+    "prisma/migrations/20260831000002_rename_hours_to_schedule",
     "nginx/proxy-entrypoint.sh",
     "nginx/Dockerfile",
     "README.md",
@@ -197,12 +205,6 @@
     "tsconfig.json",
     "tailwind.config.ts",
     "postcss.config.mjs",
-    "package-lock.json",
-    "package.json",
-    "next-env.d.ts",
-    "next.config.js",
-    "iniciar_produccion.sh",
-    "entrypoint.sh",
     "AGENTS.md"
   ]
 }

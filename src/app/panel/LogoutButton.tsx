@@ -31,9 +31,27 @@ export default function LogoutButton() {
     <button
       onClick={handleLogout}
       disabled={loading}
-      className="w-full px-4 py-2 rounded-xl text-sm font-medium bg-red-950/40 text-red-400 border border-red-900/30 hover:bg-red-900/40 hover:text-red-300 transition text-left flex items-center gap-2"
+      className="w-full flex items-center gap-2 px-3 py-2.5 rounded-[10px] text-sm font-semibold transition-all duration-150"
+      style={{
+        background: "rgba(255,255,255,.06)",
+        color: "rgba(255,255,255,.7)",
+        border: "1px solid rgba(255,255,255,.08)",
+        cursor: loading ? "wait" : "pointer",
+      }}
+      onMouseEnter={(e) => {
+        if (!loading) {
+          (e.currentTarget as HTMLElement).style.background = "#dc2626";
+          (e.currentTarget as HTMLElement).style.color = "#fff";
+          (e.currentTarget as HTMLElement).style.border = "1px solid #dc2626";
+        }
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,.06)";
+        (e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,.7)";
+        (e.currentTarget as HTMLElement).style.border = "1px solid rgba(255,255,255,.08)";
+      }}
     >
-      {loading ? "Cerrando..." : "🚪 Cerrar Sesión"}
+      🚪 {loading ? "Cerrando sesión..." : "Cerrar Sesión"}
     </button>
   );
 }
