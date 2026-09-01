@@ -323,3 +323,47 @@ Antes de la publicación, accede al panel → "Textos Legales" y edita cada docu
 La **dirección fiscal** no aparece como texto en el código: se muestra como imagen `direccion.webp` (ver sección anterior).
 
 > ⚠️ **Descargo de responsabilidad**: Los textos legales incluidos en este proyecto son una base razonable pero **no sustituyen en ningún caso el asesoramiento de un abogado**. Deben personalizarse con los datos reales del titular y revisarse por un profesional jurídico antes de su publicación, especialmente en lo relativo a cumplimiento del RGPD y la LSSI-CE.
+
+---
+
+## Historial de Cambios
+
+### 2026-09-01 — Rediseño visual (sistema de diseño amarillo/negro)
+
+Aplicado el sistema de diseño del repositorio de referencia `todosevillaeste.es` a toda la aplicación.
+
+#### Tokens de diseño adoptados
+
+| Token | Valor anterior | Valor nuevo |
+|---|---|---|
+| Color de marca | Azul `#1e3a8a→#3b82f6` | Amarillo `#f3d044` |
+| Header / Footer | Gradiente azul / Gris oscuro | Amarillo `#f3d044` + texto negro |
+| Hero section | Gradiente azul | Amarillo `#f3d044` |
+| Botones primarios | Azul `#2563eb` | Negro `#111` + texto blanco |
+| Botón de acción | Azul | Amarillo `#f3d044` + texto negro |
+| Sidebar admin | `bg-slate-900` | `#1f1f1f→#232323` + hover amarillo |
+| Badges de categoría | Azul claro | Amarillo suave `#fff7d1` |
+| Fondo general | `#f8fafc` | `#f5f7fb` degradado blanco→gris |
+
+#### Archivos modificados
+
+- **`src/app/globals.css`**: Variables CSS del sistema de diseño (`--ux-brand`, `--ux-dark`, etc.), clases `.header-brand`, `.footer-brand`, `.hero-brand`, `.badge-brand`, `.admin-sidebar`.
+- **`src/app/layout.tsx`**: Header amarillo + botón "Panel Admin" negro. Footer amarillo con links negros.
+- **`src/app/page.tsx`**: Hero amarillo, cards con hover amarillo, badges de categoría amarillo suave.
+- **`src/components/SearchForm.tsx`**: Focus en amarillo, botón "Buscar" negro.
+- **`src/app/panel/layout.tsx`**: Sidebar negro con hover amarillo, layout `min-h-screen`, top bar móvil.
+- **`src/app/panel/LogoutButton.tsx`**: Adaptado al sidebar oscuro (hover rojo).
+- **`src/components/UpdateManager.tsx`**: Fix URL GitHub + rediseño amarillo/negro (ver abajo).
+
+#### Fix UpdateManager
+
+- **Bug corregido**: URL de GitHub hardcodeada. Ahora usa `NEXT_PUBLIC_GITHUB_REPO` (fallback: `alberFdezBell/todosevilla`).
+- **Errores descriptivos**: Distingue rate-limit (403), repo no encontrado (404) y error genérico.
+- **Rediseño**: Botón "Buscar" negro, botón "Confirmar" amarillo, alertas con borde izquierdo de color.
+
+#### Variable de entorno nueva (opcional)
+
+```env
+# .env.example
+NEXT_PUBLIC_GITHUB_REPO=alberFdezBell/todosevilla
+```
