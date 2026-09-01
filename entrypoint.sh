@@ -89,6 +89,8 @@ if [ "$LOCKED" = "t" ]; then
         cd /backups
         ls -1t backup_*.sql 2>/dev/null | tail -n +11 | while read -r f; do rm -f -- "$f"; done || true
         echo "Limpieza de backups antiguos completada."
+        # Volver al directorio de la app para que las rutas relativas de Prisma sean correctas
+        cd /app
       else
         echo "ATENCIÓN: El backup automático ha fallado. Por seguridad se cancela el despliegue."
         exit 1
