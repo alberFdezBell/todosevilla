@@ -1,0 +1,82 @@
+// Prisma Schema for Todo Sevilla
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Barrio {
+  id          String    @id @default(cuid())
+  nombre      String
+  slug        String    @unique
+  descripcion String?   @db.Text
+  imagen      String?
+  activo      Boolean   @default(true)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  negocios    Negocio[]
+
+  @@index([slug])
+  @@index([activo])
+}
+
+model Categoria {
+  id          String             @id @default(cuid())
+  nombre      String
+  slug        String             @unique
+  descripcion String?
+  icono       String?
+  activa      Boolean            @default(true)
+  created_at  DateTime           @default(now())
+  updated_at  DateTime           @updatedAt
+  negocios    NegocioCategoria[]
+
+  @@index([slug])
+  @@index([activa])
+}
+
+model Negocio {
+  id          String             @id @default(cuid())
+  nombre      String
+  slug        String
+  descripcion String?            @db.Text
+  barrioId    String
+  barrio      Barrio             @relation(fields: [barrioId], references: [id], onDelete: Restrict)
+  direccion   String?
+  telefono    String?
+  email       String?
+  web         String?
+  horario     String?
+  imagen      String?
+  activo      Boolean            @default(true)
+  created_at  DateTime           @default(now())
+  updated_at  DateTime           @updatedAt
+  categorias  NegocioCategoria[]
+
+  @@unique([barrioId, slug])
+  @@index([barrioId])
+  @@index([slug])
+  @@index([activo])
+}
+
+model NegocioCategoria {
+  negocioId   String
+  negocio     Negocio   @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  categoriaId String
+  categoria   Categoria @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+
+  @@id([negocioId, categoriaId])
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+}

@@ -1,0 +1,45 @@
+# dependencies
+/node_modules
+/.pnpm-store
+
+# next.js build outputs
+/.next/
+/out/
+/build
+/dist
+
+# environment variables & secrets
+.env
+.env*.local
+!.env.example
+
+# logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# database data & dumps
+/postgres_data
+*.sqlite
+*.sqlite-journal
+*.db
+/backups
+/dumps
+
+# IDE & OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Vitest / Coverage
+/coverage
+
+# Temporary files
+/tmp
+/temp

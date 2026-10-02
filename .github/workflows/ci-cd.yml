@@ -1,0 +1,186 @@
+name: CI/CD Pipeline - Todo Sevilla
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ========================================================
+  # JOB 1: LINT, TEST & BUILD VALIDATION
+  # ========================================================
+  validate:
+    name: Lint, Tests & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Código Fuente
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Instalar Dependencias
+        run: npm ci
+
+      - name: Ejecutar Linter
+        run: npm run lint
+
+      - name: Ejecutar Tests Unitarios e Integración
+        run: npm run test
+
+      - name: Generar Prisma Client
+        run: npx prisma generate
+
+      - name: Validar Build de Producción (Next.js)
+        run: npm run build
+
+      # Telegram Notification on Failure
+      - name: 🔴 Notificar Build Fallido en Telegram
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            🔴 Todo Sevilla
+
+            BUILD FALLIDO
+
+            Commit: ${{ github.sha }}
+            Autor: ${{ github.actor }}
+
+            Producción NO se ha actualizado.
+            La versión anterior continúa activa.
+
+  # ========================================================
+  # JOB 2: DOCKER BUILD, TAG & PUSH TO REGISTRY (GHCR)
+  # ========================================================
+  package-and-deploy:
+    name: Docker Build, Registry & Portainer Deploy
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Código Fuente
+        uses: actions/checkout@v4
+
+      - name: Extraer versión / SHA corto
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Authenticate con GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extraer Metadatos para Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=v0.1.0-
+            type=raw,value=latest
+
+      - name: Construir e Impulsar Imagen Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: 🟢 Notificar Build Correcto en Telegram
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            🟢 Todo Sevilla
+
+            BUILD CORRECTO Y PUBLICADO EN REGISTRY
+
+            Commit: ${{ steps.vars.outputs.sha_short }}
+            Versión: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v0.1.0-${{ steps.vars.outputs.sha_short }}
+
+            La versión ha superado los tests y se enviará a Portainer.
+
+      # ========================================================
+      # STEP: TRIGGER PORTAINER STACK UPDATE VIA WEBHOOK / API
+      # ========================================================
+      - name: Notificar / Desplegar en Portainer
+        id: portainer
+        run: |
+          if [ -n "${{ secrets.PORTAINER_WEBHOOK_URL }}" ]; then
+            echo "Enviando señal de actualización a Portainer..."
+            curl -X POST "${{ secrets.PORTAINER_WEBHOOK_URL }}"
+          else
+            echo "PORTAINER_WEBHOOK_URL no configurado en Secrets. Salteando llamada HTTP a Portainer."
+          fi
+
+      # ========================================================
+      # STEP: POST-DEPLOY HEALTHCHECK & AUTOMATIC ROLLBACK CHECK
+      # ========================================================
+      - name: Healthcheck Post-Despliegue
+        id: healthcheck
+        run: |
+          PROD_URL="${{ secrets.PRODUCTION_APP_URL || 'http://localhost:3000' }}"
+          echo "Comprobando endpoint de salud en $PROD_URL/api/health..."
+          
+          # Wait up to 30s for container readiness
+          for i in {1..6}; do
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PROD_URL/api/health" || echo "000")
+            if [ "$HTTP_STATUS" -eq 200 ]; then
+              echo "✅ Healthcheck OK (Status 200)"
+              exit 0
+            fi
+            echo "Reintento $i... Status: $HTTP_STATUS"
+            sleep 5
+          done
+          
+          echo "❌ Healthcheck Falló post-despliegue!"
+          exit 1
+        continue-on-error: true
+
+      - name: 🚀 Notificar Producción Actualizada en Telegram
+        if: steps.healthcheck.outcome == 'success'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            🚀 Todo Sevilla
+
+            PRODUCCIÓN ACTUALIZADA CON ÉXITO
+
+            Versión: v0.1.0-${{ steps.vars.outputs.sha_short }}
+            Healthcheck: OK 🟢
+
+      - name: 🔴 Notificar Despliegue Fallido y Rollback en Telegram
+        if: steps.healthcheck.outcome != 'success'
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            🔴 Todo Sevilla
+
+            DESPLIEGUE FALLIDO EN PRODUCCIÓN
+
+            La nueva versión no superó el healthcheck post-despliegue (/api/health).
+            Se requiere rollback en Portainer a la versión tag anterior.
