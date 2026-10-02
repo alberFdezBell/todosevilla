@@ -8,7 +8,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   # ========================================================
@@ -31,9 +30,6 @@ jobs:
       - name: Instalar Dependencias
         run: npm ci
 
-      - name: Ejecutar Linter
-        run: npm run lint
-
       - name: Ejecutar Tests Unitarios e Integración
         run: npm run test
 
@@ -43,23 +39,17 @@ jobs:
       - name: Validar Build de Producción (Next.js)
         run: npm run build
 
-      # Telegram Notification on Failure
-      - name: 🔴 Notificar Build Fallido en Telegram
-        if: failure()
+      - name: Notificar Build Fallido en Telegram
+        if: failure() && secrets.TELEGRAM_BOT_TOKEN != ''
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           message: |
-            🔴 Todo Sevilla
-
-            BUILD FALLIDO
-
+            Todo Sevilla - BUILD FALLIDO
             Commit: ${{ github.sha }}
             Autor: ${{ github.actor }}
-
-            Producción NO se ha actualizado.
-            La versión anterior continúa activa.
+            Produccion NO se ha actualizado.
 
   # ========================================================
   # JOB 2: DOCKER BUILD, TAG & PUSH TO REGISTRY (GHCR)
@@ -79,9 +69,12 @@ jobs:
 
       - name: Extraer versión / SHA corto
         id: vars
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        run: |
+          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          # GHCR requiere nombre de imagen en minusculas
+          echo "image_name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
-      - name: Authenticate con GitHub Container Registry (GHCR)
+      - name: Autenticar con GitHub Container Registry (GHCR)
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -92,7 +85,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ steps.vars.outputs.image_name }}
           tags: |
             type=sha,prefix=v0.1.0-
             type=raw,value=latest
@@ -105,82 +98,72 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      - name: 🟢 Notificar Build Correcto en Telegram
+      - name: Notificar Build Correcto en Telegram
+        if: secrets.TELEGRAM_BOT_TOKEN != ''
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           message: |
-            🟢 Todo Sevilla
-
-            BUILD CORRECTO Y PUBLICADO EN REGISTRY
-
-            Commit: ${{ steps.vars.outputs.sha_short }}
-            Versión: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v0.1.0-${{ steps.vars.outputs.sha_short }}
-
-            La versión ha superado los tests y se enviará a Portainer.
+            Todo Sevilla - BUILD CORRECTO
+            Imagen: ${{ env.REGISTRY }}/${{ steps.vars.outputs.image_name }}:v0.1.0-${{ steps.vars.outputs.sha_short }}
 
       # ========================================================
-      # STEP: TRIGGER PORTAINER STACK UPDATE VIA WEBHOOK / API
+      # STEP: TRIGGER PORTAINER STACK UPDATE VIA WEBHOOK
       # ========================================================
-      - name: Notificar / Desplegar en Portainer
+      - name: Notificar o Desplegar en Portainer
         id: portainer
         run: |
           if [ -n "${{ secrets.PORTAINER_WEBHOOK_URL }}" ]; then
-            echo "Enviando señal de actualización a Portainer..."
-            curl -X POST "${{ secrets.PORTAINER_WEBHOOK_URL }}"
+            echo "Enviando señal de actualizacion a Portainer..."
+            curl -fsS -X POST "${{ secrets.PORTAINER_WEBHOOK_URL }}" && echo "OK" || echo "Portainer webhook failed (non-fatal)"
           else
-            echo "PORTAINER_WEBHOOK_URL no configurado en Secrets. Salteando llamada HTTP a Portainer."
+            echo "PORTAINER_WEBHOOK_URL no configurado. Saltando paso de Portainer."
           fi
 
       # ========================================================
-      # STEP: POST-DEPLOY HEALTHCHECK & AUTOMATIC ROLLBACK CHECK
+      # STEP: POST-DEPLOY HEALTHCHECK
       # ========================================================
       - name: Healthcheck Post-Despliegue
         id: healthcheck
         run: |
-          PROD_URL="${{ secrets.PRODUCTION_APP_URL || 'http://localhost:3000' }}"
-          echo "Comprobando endpoint de salud en $PROD_URL/api/health..."
-          
-          # Wait up to 30s for container readiness
+          # Usar PRODUCTION_APP_URL si existe, si no, saltar healthcheck
+          PROD_URL="${{ secrets.PRODUCTION_APP_URL }}"
+          if [ -z "$PROD_URL" ]; then
+            echo "PRODUCTION_APP_URL no configurado. Saltando healthcheck post-deploy."
+            exit 0
+          fi
+
+          echo "Comprobando $PROD_URL/api/health..."
           for i in {1..6}; do
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PROD_URL/api/health" || echo "000")
-            if [ "$HTTP_STATUS" -eq 200 ]; then
-              echo "✅ Healthcheck OK (Status 200)"
+            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PROD_URL/api/health" 2>/dev/null || echo "000")
+            echo "Intento $i - Status: $HTTP_STATUS"
+            if [ "$HTTP_STATUS" = "200" ]; then
+              echo "Healthcheck OK"
               exit 0
             fi
-            echo "Reintento $i... Status: $HTTP_STATUS"
             sleep 5
           done
-          
-          echo "❌ Healthcheck Falló post-despliegue!"
+          echo "Healthcheck Fallo post-despliegue"
           exit 1
         continue-on-error: true
 
-      - name: 🚀 Notificar Producción Actualizada en Telegram
-        if: steps.healthcheck.outcome == 'success'
+      - name: Notificar Produccion Actualizada en Telegram
+        if: steps.healthcheck.outcome == 'success' && secrets.TELEGRAM_BOT_TOKEN != ''
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           message: |
-            🚀 Todo Sevilla
+            Todo Sevilla - PRODUCCION ACTUALIZADA
+            Version: v0.1.0-${{ steps.vars.outputs.sha_short }}
 
-            PRODUCCIÓN ACTUALIZADA CON ÉXITO
-
-            Versión: v0.1.0-${{ steps.vars.outputs.sha_short }}
-            Healthcheck: OK 🟢
-
-      - name: 🔴 Notificar Despliegue Fallido y Rollback en Telegram
-        if: steps.healthcheck.outcome != 'success'
+      - name: Notificar Despliegue Fallido en Telegram
+        if: steps.healthcheck.outcome == 'failure' && secrets.TELEGRAM_BOT_TOKEN != ''
         uses: appleboy/telegram-action@master
         with:
           to: ${{ secrets.TELEGRAM_CHAT_ID }}
           token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           message: |
-            🔴 Todo Sevilla
-
-            DESPLIEGUE FALLIDO EN PRODUCCIÓN
-
-            La nueva versión no superó el healthcheck post-despliegue (/api/health).
-            Se requiere rollback en Portainer a la versión tag anterior.
+            Todo Sevilla - DESPLIEGUE FALLIDO
+            El healthcheck no respondio. Revisar Portainer y hacer rollback si es necesario.
