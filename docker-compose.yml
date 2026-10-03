@@ -2,8 +2,9 @@ version: '3.8'
 
 # ============================================================
 # Todo Sevilla — Stack de Producción
-# Para usar con Portainer o directamente con:
-#   docker compose up -d
+#
+# Uso con Portainer → Stacks → Add stack → Git Repository
+# Uso directo:  docker compose up -d --build
 # ============================================================
 
 services:
@@ -23,11 +24,12 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    # PostgreSQL NO expuesto al exterior — solo accesible dentro de la red Docker
-    # Para acceso de administración puntual: docker exec -it todo-sevilla-db psql -U <usuario> <bd>
+    # PostgreSQL NO expuesto al exterior: solo accesible dentro de la red Docker
 
   app:
-    image: ghcr.io/alberfdezbell/todosevilla:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: todo-sevilla-app
     restart: unless-stopped
     depends_on:
@@ -47,7 +49,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 30s
+      start_period: 60s
 
 volumes:
   postgres_data:
