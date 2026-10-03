@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { Shield, KeyRound, User, AlertCircle, Loader2 } from 'lucide-react'
 
 function AdminLoginForm() {
@@ -9,7 +9,6 @@ function AdminLoginForm() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
   const searchParams = useSearchParams()
   const from = searchParams.get('from') || '/admin'
 
@@ -29,15 +28,15 @@ function AdminLoginForm() {
 
       if (!res.ok) {
         setError(data.error || 'Error al iniciar sesión')
+        setIsLoading(false)
         return
       }
 
-      router.push(from)
-      router.refresh()
+      // Redirección completa para asegurar envío inmediato de cookies HTTP-Only
+      window.location.href = from
     } catch (err) {
       console.error(err)
       setError('Error de conexión con el servidor')
-    } finally {
       setIsLoading(false)
     }
   }

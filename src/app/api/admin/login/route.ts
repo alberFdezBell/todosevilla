@@ -15,19 +15,19 @@ export async function POST(request: Request) {
       )
     }
 
-    // 1. Look up admin user in database
+    // 1. Buscar usuario admin en base de datos
     let admin = await prisma.adminUser.findUnique({
       where: { username },
     })
 
-    // If database doesn't have admin user yet, fall back to ADMIN_PASSWORD env var for fallback
     let isValid = false
+
     if (admin) {
       isValid = await bcrypt.compare(password, admin.passwordHash)
     } else if (username === 'admin') {
+      // Si no existe admin en BD, usar ADMIN_PASSWORD de entorno como fallback y crearlo
       const fallbackPass = process.env.ADMIN_PASSWORD || 'AdminSevilla2026!ChangeMe'
       if (password === fallbackPass) {
-        // Create user in db automatically
         const hash = await bcrypt.hash(password, 10)
         admin = await prisma.adminUser.create({
           data: { username: 'admin', passwordHash: hash },
@@ -37,13 +37,14 @@ export async function POST(request: Request) {
     }
 
     if (!isValid || !admin) {
+      console.warn(`[AUTH] Intento de login fallido para usuario: "${username}"`)
       return NextResponse.json(
-        { error: 'Credenciales inválidas' },
+        { error: 'Usuario o contraseña incorrectos' },
         { status: 401 }
       )
     }
 
-    // Generate JWT token
+    // Generar token JWT
     const token = await createAdminToken({ username: admin.username, id: admin.id })
 
     const response = NextResponse.json({
@@ -51,22 +52,28 @@ export async function POST(request: Request) {
       message: 'Autenticación exitosa',
     })
 
-    // Set HTTP-Only Cookie
+    // Detectar si la conexión entrante es HTTPS
+    const isHttps =
+      request.headers.get('x-forwarded-proto') === 'https' ||
+      request.url.startsWith('https://')
+
+    // Establecer Cookie HTTP-Only
     response.cookies.set({
       name: ADMIN_COOKIE_NAME,
       value: token,
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: isHttps, // Solo poner secure: true si la conexión realmente es HTTPS
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24, // 24 hours
+      maxAge: 60 * 60 * 24, // 24 horas
     })
 
+    console.log(`[AUTH] Login exitoso para usuario: "${admin.username}" (HTTPS: ${isHttps})`)
     return response
   } catch (error) {
-    console.error('Login error:', error)
+    console.error('[AUTH] Error en el servidor durante el login:', error)
     return NextResponse.json(
-      { error: 'Error interno en la autenticación' },
+      { error: 'Error interno en el servidor de autenticación' },
       { status: 500 }
     )
   }
