@@ -71,12 +71,12 @@ export function SearchBar({ placeholder = 'Buscar cafetería, peluquería, Trian
 
   return (
     <div ref={containerRef} className="relative w-full max-w-2xl mx-auto">
-      <form onSubmit={handleSubmit} className="relative flex items-center shadow-lg rounded-2xl overflow-hidden border-2 border-sevilla-albero/40 focus-within:border-sevilla-carmesi bg-white transition-all">
-        <div className="pl-4 pr-2 text-sevilla-carmesi">
+      <form onSubmit={handleSubmit} className="relative flex items-center shadow-md rounded-2xl overflow-hidden border-2 border-[#f3d044] focus-within:border-[#d4b123] bg-white transition-all">
+        <div className="pl-4 pr-2 text-gray-700">
           {isLoading ? (
-            <Loader2 className="w-5 h-5 animate-spin text-sevilla-albero-dark" />
+            <Loader2 className="w-5 h-5 animate-spin text-[#d4b123]" />
           ) : (
-            <Search className="w-5 h-5" />
+            <Search className="w-5 h-5 text-gray-600" />
           )}
         </div>
         <input
@@ -85,11 +85,11 @@ export function SearchBar({ placeholder = 'Buscar cafetería, peluquería, Trian
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.trim().length >= 2 && setIsOpen(true)}
           placeholder={placeholder}
-          className="w-full py-4 pr-4 text-gray-800 placeholder-gray-400 font-medium text-base sm:text-lg focus:outline-none bg-transparent"
+          className="w-full py-3.5 pr-4 text-gray-900 placeholder-gray-400 font-medium text-base sm:text-lg focus:outline-none bg-transparent"
         />
         <button
           type="submit"
-          className="mr-2 bg-sevilla-carmesi hover:bg-sevilla-carmesi-dark text-white font-semibold px-5 py-2.5 rounded-xl text-sm sm:text-base transition-colors flex items-center gap-1 shrink-0"
+          className="mr-1.5 bg-[#f3d044] hover:bg-[#e5c234] text-gray-950 font-extrabold px-5 py-2.5 rounded-xl text-sm sm:text-base transition-colors flex items-center gap-1.5 shrink-0 shadow-xs"
         >
           <span>Buscar</span>
           <ArrowRight className="w-4 h-4 hidden sm:inline" />
@@ -98,7 +98,7 @@ export function SearchBar({ placeholder = 'Buscar cafetería, peluquería, Trian
 
       {/* Autocomplete Dropdown */}
       {isOpen && results && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-50 max-h-96 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden z-50 max-h-96 overflow-y-auto">
           {results.barrios.length === 0 && results.negocios.length === 0 ? (
             <div className="p-4 text-center text-sm text-gray-500">
               No se encontraron resultados para &quot;{query}&quot;
@@ -107,9 +107,9 @@ export function SearchBar({ placeholder = 'Buscar cafetería, peluquería, Trian
             <div className="divide-y divide-gray-100">
               {/* Barrio matches */}
               {results.barrios.length > 0 && (
-                <div className="p-3 bg-amber-50/50">
-                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-sevilla-carmesi mb-2 flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5" />
+                <div className="p-3 bg-[#fff7d1]/50">
+                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-gray-800 mb-2 flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-gray-700" />
                     Barrios encontrados ({results.barrios.length})
                   </div>
                   <div className="space-y-1">
@@ -118,14 +118,14 @@ export function SearchBar({ placeholder = 'Buscar cafetería, peluquería, Trian
                         key={b.id}
                         href={`/sevilla/${b.slug}`}
                         onClick={() => setIsOpen(false)}
-                        className="flex items-center justify-between p-2 rounded-lg hover:bg-white text-sm font-semibold text-gray-800 transition-colors"
+                        className="flex items-center justify-between p-2 rounded-xl hover:bg-white text-sm font-semibold text-gray-900 transition-colors"
                       >
                         <span className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-sevilla-albero-dark" />
+                          <MapPin className="w-4 h-4 text-[#d4b123]" />
                           Barrio {b.nombre}
                         </span>
                         {b._count && (
-                          <span className="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                          <span className="text-xs font-bold text-gray-700 bg-white border border-[#ecd37b] px-2 py-0.5 rounded-full">
                             {b._count.negocios} negocios
                           </span>
                         )}
@@ -138,8 +138,8 @@ export function SearchBar({ placeholder = 'Buscar cafetería, peluquería, Trian
               {/* Negocio matches */}
               {results.negocios.length > 0 && (
                 <div className="p-3">
-                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-sevilla-albero-dark mb-2 flex items-center gap-1">
-                    <Store className="w-3.5 h-3.5" />
+                  <div className="text-[11px] font-extrabold uppercase tracking-wider text-gray-800 mb-2 flex items-center gap-1">
+                    <Store className="w-3.5 h-3.5 text-[#d4b123]" />
                     Negocios ({results.negocios.length})
                   </div>
                   <div className="space-y-1">
@@ -148,15 +148,15 @@ export function SearchBar({ placeholder = 'Buscar cafetería, peluquería, Trian
                         key={n.id}
                         href={`/sevilla/${n.barrio.slug}/${n.slug}`}
                         onClick={() => setIsOpen(false)}
-                        className="flex items-center justify-between p-2 rounded-lg hover:bg-amber-50 text-sm font-medium text-gray-800 transition-colors"
+                        className="flex items-center justify-between p-2 rounded-xl hover:bg-[#fff7d1]/40 text-sm font-medium text-gray-900 transition-colors"
                       >
                         <div>
-                          <div className="font-semibold text-gray-900">{n.nombre}</div>
+                          <div className="font-bold text-gray-900">{n.nombre}</div>
                           {n.direccion && (
                             <div className="text-xs text-gray-500">{n.direccion}</div>
                           )}
                         </div>
-                        <span className="text-xs font-medium text-sevilla-carmesi bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-md">
+                        <span className="text-xs font-bold text-gray-800 bg-[#fff7d1] border border-[#ecd37b] px-2 py-0.5 rounded-md">
                           {n.barrio.nombre}
                         </span>
                       </Link>
@@ -169,7 +169,7 @@ export function SearchBar({ placeholder = 'Buscar cafetería, peluquería, Trian
                 <Link
                   href={`/sevilla/buscar?q=${encodeURIComponent(query.trim())}`}
                   onClick={() => setIsOpen(false)}
-                  className="text-xs font-bold text-sevilla-carmesi hover:underline"
+                  className="text-xs font-bold text-gray-900 hover:text-sevilla-carmesi"
                 >
                   Ver todos los resultados de &quot;{query}&quot; →
                 </Link>

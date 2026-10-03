@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, Suspense } from 'react'
+import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
-import { Shield, KeyRound, User, AlertCircle, Loader2 } from 'lucide-react'
+import { KeyRound, User, AlertCircle, Loader2 } from 'lucide-react'
 
 function AdminLoginForm() {
   const [username, setUsername] = useState('')
@@ -32,7 +33,6 @@ function AdminLoginForm() {
         return
       }
 
-      // Redirección completa para asegurar envío inmediato de cookies HTTP-Only
       window.location.href = from
     } catch (err) {
       console.error(err)
@@ -44,13 +44,19 @@ function AdminLoginForm() {
   return (
     <div className="w-full max-w-md bg-white rounded-3xl border border-gray-200 shadow-xl p-8 space-y-6">
       <div className="text-center space-y-2">
-        <div className="inline-flex bg-sevilla-carmesi text-white p-3 rounded-2xl shadow-md">
-          <Shield className="w-8 h-8" />
+        <div className="inline-flex bg-[#fff7d1] border border-[#ecd37b] p-3.5 rounded-2xl shadow-xs mx-auto">
+          <Image
+            src="/todosevilla.svg"
+            alt="Logo Todo Sevilla"
+            width={48}
+            height={48}
+            className="object-contain"
+          />
         </div>
-        <h1 className="text-2xl font-extrabold text-gray-900">
+        <h1 className="text-2xl font-extrabold text-gray-950">
           Administración de Todo Sevilla
         </h1>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-[#516173]">
           Acceso privado restringido a personal autorizado
         </p>
       </div>
@@ -77,7 +83,7 @@ function AdminLoginForm() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Nombre de usuario"
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sevilla-carmesi focus:bg-white transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f3d044] focus:bg-white transition-all"
             />
           </div>
         </div>
@@ -96,7 +102,7 @@ function AdminLoginForm() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sevilla-carmesi focus:bg-white transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#f3d044] focus:bg-white transition-all"
             />
           </div>
         </div>
@@ -104,11 +110,11 @@ function AdminLoginForm() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-sevilla-carmesi hover:bg-sevilla-carmesi-dark text-white font-bold py-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50 text-sm mt-2"
+          className="w-full bg-[#f3d044] hover:bg-[#e5c234] text-gray-950 font-extrabold py-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50 text-sm mt-2"
         >
           {isLoading ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin text-gray-900" />
               <span>Autenticando...</span>
             </>
           ) : (
@@ -125,7 +131,7 @@ export default function AdminLoginPage() {
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
       <Suspense fallback={
         <div className="p-8 text-center text-gray-500">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto text-sevilla-carmesi" />
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#f3d044]" />
         </div>
       }>
         <AdminLoginForm />

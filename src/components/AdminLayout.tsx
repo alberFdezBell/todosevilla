@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { Shield, Building2, Store, Tags, LayoutDashboard, LogOut } from 'lucide-react'
+import { Building2, Store, Tags, LayoutDashboard, LogOut } from 'lucide-react'
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -24,15 +25,19 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Top Bar Admin */}
-      <header className="bg-gray-900 text-white border-b-4 border-sevilla-carmesi sticky top-0 z-30 shadow-md">
+      <header className="bg-gray-950 text-white border-b-4 border-[#f3d044] sticky top-0 z-30 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-sevilla-carmesi text-white p-1.5 rounded-lg shadow-sm">
-              <Shield className="w-5 h-5" />
-            </div>
+            <Image
+              src="/todosevilla.svg"
+              alt="Todo Sevilla Logo"
+              width={28}
+              height={28}
+              className="object-contain shrink-0"
+            />
             <div>
               <span className="font-extrabold text-lg tracking-tight">
-                TODO SEVILLA <span className="text-sevilla-albero text-xs uppercase font-bold px-2 py-0.5 rounded bg-gray-800 ml-1">Panel Admin</span>
+                TODO SEVILLA <span className="text-[#f3d044] text-xs uppercase font-extrabold px-2 py-0.5 rounded bg-gray-900 ml-1 border border-amber-500/20">Panel Admin</span>
               </span>
             </div>
           </div>
@@ -54,7 +59,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Sub-navigation tabs */}
-        <div className="bg-gray-800/90 border-t border-gray-700/80">
+        <div className="bg-gray-900 border-t border-gray-800">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 overflow-x-auto py-2">
             {navItems.map((item) => {
               const Icon = item.icon
@@ -63,10 +68,10 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold transition-all whitespace-nowrap ${
                     isActive
-                      ? 'bg-sevilla-carmesi text-white shadow-sm'
-                      : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                      ? 'bg-[#f3d044] text-gray-950 shadow-sm'
+                      : 'text-gray-300 hover:text-white hover:bg-gray-800'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
