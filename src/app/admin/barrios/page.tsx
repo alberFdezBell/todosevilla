@@ -1,9 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { AdminLayout } from '@/components/AdminLayout'
-import { Building2, Plus, Edit2, Trash2, CheckCircle, XCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react'
+import { Building2, Plus, Edit2, Trash2, CheckCircle, AlertCircle, Loader2, Map } from 'lucide-react'
 import { slugify } from '@/lib/utils'
+import type { Feature, Geometry } from 'geojson'
+
+// next/dynamic con ssr:false garantiza que Leaflet nunca se evalúa en el servidor
+const BarrioMapDrawer = dynamic(() => import('@/components/BarrioMapDrawer'), {
+  ssr: false,
+  loading: () => (
+    <div className="h-[400px] flex items-center justify-center bg-gray-50 rounded-xl border border-gray-200 text-gray-400 text-sm">
+      <Loader2 className="w-5 h-5 animate-spin mr-2" /> Cargando mapa…
+    </div>
+  ),
+})
 
 interface BarrioItem {
   id: string
@@ -11,6 +23,7 @@ interface BarrioItem {
   slug: string
   descripcion: string | null
   imagen: string | null
+  geojson: object | null
   activo: boolean
   _count?: { negocios: number }
 }
@@ -31,7 +44,9 @@ export default function AdminBarriosPage() {
     imagen: '',
     activo: true,
   })
+  const [geojson, setGeojson] = useState<Feature<Geometry> | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [showMap, setShowMap] = useState(false)
 
   const fetchBarrios = async () => {
     setIsLoading(true)
@@ -58,6 +73,8 @@ export default function AdminBarriosPage() {
   const handleOpenCreate = () => {
     setEditingBarrio(null)
     setFormData({ nombre: '', slug: '', descripcion: '', imagen: '', activo: true })
+    setGeojson(null)
+    setShowMap(false)
     setIsModalOpen(true)
     setError('')
     setSuccess('')
@@ -72,6 +89,8 @@ export default function AdminBarriosPage() {
       imagen: barrio.imagen || '',
       activo: barrio.activo,
     })
+    setGeojson((barrio.geojson as Feature<Geometry>) ?? null)
+    setShowMap(false)
     setIsModalOpen(true)
     setError('')
     setSuccess('')
@@ -81,7 +100,6 @@ export default function AdminBarriosPage() {
     setFormData((prev) => ({
       ...prev,
       nombre: val,
-      // Auto generate slug if user hasn't modified it manually or when creating
       slug: !editingBarrio ? slugify(val) : prev.slug,
     }))
   }
@@ -99,7 +117,7 @@ export default function AdminBarriosPage() {
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, geojson }),
       })
 
       const data = await res.json()
@@ -154,6 +172,7 @@ export default function AdminBarriosPage() {
           slug: barrio.slug,
           descripcion: barrio.descripcion,
           imagen: barrio.imagen,
+          geojson: barrio.geojson,
           activo: !barrio.activo,
         }),
       })
@@ -222,6 +241,7 @@ export default function AdminBarriosPage() {
                   <tr className="bg-gray-50 border-b border-gray-200 text-[11px] uppercase font-bold text-gray-500">
                     <th className="p-4">Barrio</th>
                     <th className="p-4">Slug</th>
+                    <th className="p-4 text-center">Mapa</th>
                     <th className="p-4 text-center">Negocios</th>
                     <th className="p-4 text-center">Estado</th>
                     <th className="p-4 text-right">Acciones</th>
@@ -238,6 +258,17 @@ export default function AdminBarriosPage() {
                       </td>
                       <td className="p-4 font-mono text-xs text-amber-900 bg-amber-50/50 px-2 py-1 rounded inline-block my-3">
                         {b.slug}
+                      </td>
+                      <td className="p-4 text-center">
+                        {b.geojson ? (
+                          <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full text-[11px] font-bold">
+                            <Map className="w-3 h-3" /> Definido
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-gray-400 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-full text-[11px] font-bold">
+                            Sin área
+                          </span>
+                        )}
                       </td>
                       <td className="p-4 text-center">
                         <span className="bg-gray-100 text-gray-800 font-bold px-2.5 py-1 rounded-full text-xs">
@@ -282,8 +313,8 @@ export default function AdminBarriosPage() {
 
         {/* Create / Edit Modal */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl max-w-lg w-full p-8 shadow-2xl space-y-6">
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-start justify-center p-4 overflow-y-auto">
+            <div className="bg-white rounded-3xl max-w-2xl w-full p-8 shadow-2xl space-y-6 my-8">
               <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                 <h3 className="text-xl font-bold text-gray-900">
                   {editingBarrio ? 'Editar Barrio' : 'Crear Nuevo Barrio'}
@@ -348,6 +379,39 @@ export default function AdminBarriosPage() {
                     placeholder="https://..."
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sevilla-carmesi focus:bg-white"
                   />
+                </div>
+
+                {/* ── Sección de mapa ── */}
+                <div className="space-y-2 pt-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-700">
+                      Área del Barrio en el Mapa
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {geojson && (
+                        <span className="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
+                          ✓ Área definida
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setShowMap((v) => !v)}
+                        className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 underline underline-offset-2"
+                      >
+                        <Map className="w-3.5 h-3.5" />
+                        {showMap ? 'Ocultar mapa' : geojson ? 'Editar área' : 'Dibujar área'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {showMap && (
+                    <BarrioMapDrawer
+                      key={editingBarrio?.id ?? 'new'}
+                      value={geojson}
+                      onChange={(feat) => setGeojson(feat)}
+                      height={400}
+                    />
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2 pt-2">

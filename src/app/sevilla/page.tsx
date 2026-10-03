@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { SearchBar } from '@/components/SearchBar'
 import { MapPin, Building2, Store, Sparkles, ArrowRight, ShieldCheck, Heart } from 'lucide-react'
+import SevillaBarriosMap from '@/components/SevillaBarriosMap'
 
 export const revalidate = 60
 export const dynamic = 'force-dynamic'
@@ -213,6 +214,22 @@ export default async function PortadaPage() {
             </Link>
           ))}
         </div>
+      </section>
+
+      {/* Mapa de Barrios */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h2 className="text-3xl font-extrabold text-gray-950 mt-1">
+            Mapa de Barrios de Sevilla
+          </h2>
+          <p className="text-sm text-[#516173] mt-2">
+            Pasa el ratón por cada barrio para descubrir su nombre y su situación en la ciudad.
+          </p>
+        </div>
+        <SevillaBarriosMap
+          height={680}
+          className="w-full rounded-2xl border border-[#d7e0ea] shadow-sm overflow-hidden"
+        />
       </section>
 
       {/* About Todo Sevilla Info Box */}

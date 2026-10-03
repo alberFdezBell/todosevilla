@@ -33,7 +33,7 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    const { nombre, slug: customSlug, descripcion, imagen, activo } = body
+    const { nombre, slug: customSlug, descripcion, imagen, activo, geojson } = body
 
     if (!nombre || typeof nombre !== 'string' || !nombre.trim()) {
       return NextResponse.json({ error: 'El nombre del barrio es obligatorio' }, { status: 400 })
@@ -63,6 +63,7 @@ export async function PUT(
         slug: finalSlug,
         descripcion: descripcion?.trim() || null,
         imagen: imagen?.trim() || null,
+        geojson: geojson !== undefined ? geojson : undefined,
         activo: Boolean(activo),
       },
     })

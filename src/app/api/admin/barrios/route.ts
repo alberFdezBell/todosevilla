@@ -22,7 +22,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { nombre, slug: customSlug, descripcion, imagen, activo } = body
+    const { nombre, slug: customSlug, descripcion, imagen, activo, geojson } = body
 
     if (!nombre || typeof nombre !== 'string' || !nombre.trim()) {
       return NextResponse.json({ error: 'El nombre del barrio es obligatorio' }, { status: 400 })
@@ -48,6 +48,7 @@ export async function POST(request: Request) {
         slug: finalSlug,
         descripcion: descripcion?.trim() || null,
         imagen: imagen?.trim() || null,
+        geojson: geojson ?? null,
         activo: activo !== undefined ? Boolean(activo) : true,
       },
     })

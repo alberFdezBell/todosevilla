@@ -16,6 +16,7 @@ model Barrio {
   slug        String    @unique
   descripcion String?   @db.Text
   imagen      String?
+  geojson     Json?
   activo      Boolean   @default(true)
   created_at  DateTime  @default(now())
   updated_at  DateTime  @updatedAt
