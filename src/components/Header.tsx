@@ -10,13 +10,13 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo Todo Sevilla */}
         <Link href="/sevilla" className="flex items-center gap-3 group">
-          <div className="relative w-10 h-10 flex items-center justify-center shrink-0">
+          <div className="relative w-12 h-12 bg-[#f3d24b] border border-black/10 rounded-xl p-1.5 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
             <Image
               src="/todosevilla.svg"
               alt="Logo Todo Sevilla"
-              width={40}
-              height={40}
-              className="object-contain drop-shadow-sm group-hover:scale-105 transition-transform"
+              width={44}
+              height={44}
+              className="object-contain"
               priority
             />
           </div>
