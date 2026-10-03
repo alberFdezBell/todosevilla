@@ -10,16 +10,14 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo Todo Sevilla */}
         <Link href="/sevilla" className="flex items-center gap-3 group">
-          <div className="relative w-12 h-12 bg-[#f3d24b] border border-black/10 rounded-xl p-1.5 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-            <Image
-              src="/todosevilla.svg"
-              alt="Logo Todo Sevilla"
-              width={44}
-              height={44}
-              className="object-contain"
-              priority
-            />
-          </div>
+          <Image
+            src="/todosevilla.svg"
+            alt="Logo Todo Sevilla"
+            width={56}
+            height={56}
+            className="shrink-0 object-contain group-hover:scale-105 transition-transform"
+            priority
+          />
           <div className="flex flex-col">
             <span className="font-extrabold text-xl tracking-tight text-gray-950 leading-none">
               TODO <span className="text-gray-900">SEVILLA</span>
@@ -68,15 +66,6 @@ export function Header() {
             aria-label="Buscar negocios"
           >
             <Search className="w-5 h-5" />
-          </Link>
-
-          <Link
-            href="/admin"
-            className="flex items-center gap-1.5 text-xs font-bold text-gray-900 bg-white/80 hover:bg-white border border-black/10 px-3 py-1.5 rounded-xl transition-all shadow-xs"
-            title="Panel de Administración"
-          >
-            <Shield className="w-3.5 h-3.5 text-sevilla-carmesi" />
-            <span className="hidden sm:inline">Panel Admin</span>
           </Link>
         </div>
       </div>

@@ -1,0 +1,2936 @@
+﻿<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#f3d044">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TSE">
+
+<title>Todo Sevilla Este</title>
+
+<link rel="icon" href="/icono/tsev2_beta.png" type="image/png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/icono/tsev2_beta.png">
+
+
+
+<style>
+
+:root {
+
+  --yellow-strong: #f3d044;
+
+  --yellow-soft: #fff3c4;
+
+  --white: #ffffff;
+
+  --text: #222;
+
+  --muted: #666;
+
+  --border: #e6e7eb;
+
+  --surface: #fbfbfc;
+
+  --status-open: #28a745;
+
+  --status-closed: #dc3545;
+
+  --status-closing: #ffc107;
+
+  --status-opening: #17a2b8;
+
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+
+  font-family: Arial, Helvetica, sans-serif;
+
+  background: linear-gradient(180deg, #fff 0%, #fafafa 100%);
+
+  color: var(--text);
+
+  overflow-x: hidden;
+
+}
+
+header {
+
+  background: rgba(243, 208, 68, 0.96);
+
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+
+  padding: 0.8rem 1.5rem;
+
+  display: grid;
+
+  grid-template-columns: 1fr auto 1fr;
+
+  align-items: center;
+
+  position: sticky;
+
+  top: 0;
+
+  z-index: 100;
+
+}
+
+.logo { font-size: 1.4rem; font-weight: bold; display:flex; align-items:center; gap:.5rem; }
+
+.logo img { width: clamp(54px, 6vw, 74px); display: block; }
+
+.center-info { text-align: center; font-weight: bold; line-height: 1.2; }
+
+#time { font-size: 1.7rem; font-weight: bold; letter-spacing: .02em; }
+
+.weather { font-size: 0.92rem; color: #3f3f3f; margin-top: .15rem; }
+
+.header-actions {
+  text-align: right;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .55rem;
+}
+
+.header-actions button {
+  border: none;
+  cursor: pointer;
+  transition: background-color .18s ease, opacity .18s ease;
+}
+
+.icon-action-btn{
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-action-btn img{
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.icon-action-btn:hover{
+  background: rgba(0,0,0,.08);
+}
+
+#btnScanQr{
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+}
+
+#btnScanQr img{
+  width: 54px;
+  height: 54px;
+}
+
+.header-separator{
+  font-weight: 900;
+  color: rgba(0,0,0,.62);
+  user-select: none;
+}
+
+.auth-anchor{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+
+
+.status-badge {
+
+  display: inline-block;
+
+  padding: 0.38rem 0.72rem;
+
+  border-radius: 8px;
+
+  font-size: 0.82rem;
+
+  font-weight: 800;
+
+  text-transform: uppercase;
+
+  margin-top: auto;
+
+}
+
+.status-open { background-color: #d4edda; color: var(--status-open); border: 1px solid var(--status-open); }
+
+.status-closed { background-color: #f8d7da; color: var(--status-closed); border: 1px solid var(--status-closed); }
+
+.status-closing { background-color: #fff3cd; color: #856404; border: 1px solid var(--status-closing); }
+
+.status-opening { background-color: #d1ecf1; color: #0c5460; border: 1px solid var(--status-opening); }
+
+
+
+.carousel-container {
+
+  overflow: hidden;
+
+  position: relative;
+
+  height: 420px;
+
+  margin: 1rem 0 .6rem;
+
+  width: 100vw;
+
+  margin-left: 50%;
+
+  transform: translateX(-50%);
+
+}
+
+.carousel { display: flex; height: 100%; position: relative; align-items: center; }
+
+.carousel-track { display: flex; gap: 3vw; height: 100%; padding: .3rem 0; will-change: transform; }
+
+.carousel-card {
+
+  flex: 0 0 28vw;
+
+  max-width: 380px;
+
+  height: 340px;
+
+  background: #fff;
+
+  border: 1px solid var(--border);
+
+  border-radius: 20px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  cursor: pointer;
+
+  overflow: hidden;
+
+  position: relative;
+
+  box-shadow: 0 5px 14px rgba(0,0,0,0.06);
+
+  transition: transform 0.35s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+
+}
+
+.carousel-card:hover {
+
+  transform: translateY(-7px);
+
+  border-color: var(--yellow-strong);
+
+  box-shadow: 0 10px 22px rgba(0,0,0,0.09);
+
+}
+
+.tag {
+
+  position: absolute;
+
+  top: 10px;
+
+  left: 10px;
+
+  background: var(--yellow-strong);
+
+  padding: 0.3rem 0.7rem;
+
+  font-size: 0.75rem;
+
+  font-weight: bold;
+
+  border-radius: 15px;
+
+  z-index: 5;
+
+}
+
+.card-image { height: 45%; width: 100%; background: #f0f0f0; }
+
+.card-image img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s ease; }
+
+.carousel-card:hover .card-image img { transform: scale(1.04); }
+
+.card-content { height: 55%; padding: 1rem; display: flex; flex-direction: column; }
+
+.card-content h3 { font-size: 1.08rem; margin-bottom: 0.45rem; line-height: 1.2; }
+
+.card-content .description { font-size: 0.9rem; color: var(--muted); margin-bottom: 0.6rem; flex-grow: 1; }
+
+
+
+.search-section {
+
+  background: linear-gradient(180deg, var(--yellow-soft) 0%, #fff9df 100%);
+
+  padding: 2.6rem 1.4rem 2rem;
+
+  border-top: 1px solid rgba(0,0,0,0.05);
+
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+
+}
+
+.search-box {
+
+  max-width: 940px;
+
+  margin: auto;
+
+  display: flex;
+
+  gap: 0.9rem;
+
+  flex-wrap: wrap;
+
+  align-items: center;
+
+  padding: .7rem;
+
+  background: rgba(255,255,255,0.82);
+
+  border: 1px solid rgba(0,0,0,0.06);
+
+  border-radius: 14px;
+
+  backdrop-filter: blur(2px);
+
+}
+
+.search-box input, .search-box select {
+
+  flex: 1;
+
+  min-width: 200px;
+
+  padding: 0.92rem 0.95rem;
+
+  border: 1px solid #d7d7d7;
+
+  border-radius: 10px;
+
+  background: #fff;
+
+}
+
+.search-box input:focus, .search-box select:focus {
+
+  outline: none;
+
+  border-color: #b6b6b6;
+
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.08);
+
+}
+
+.search-box button {
+
+  background: #111;
+
+  color: #fff;
+
+  border: none;
+
+  padding: 0.95rem 1.8rem;
+
+  font-weight: bold;
+
+  cursor: pointer;
+
+  border-radius: 10px;
+
+  transition: transform .2s ease, opacity .2s ease;
+
+}
+
+.search-box button:hover { transform: translateY(-1px); opacity: .92; }
+
+.business-access-section{
+  max-width: 980px;
+  margin: 16px auto 0;
+  padding: 0 14px;
+}
+
+.business-access-card{
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+}
+
+.business-access-title{
+  font-weight: 800;
+}
+
+.business-access-sub{
+  font-size: .9rem;
+  color: var(--muted);
+}
+
+.business-access-btn{
+  border: none;
+  border-radius: 8px;
+  padding: .56rem .9rem;
+  font-weight: 800;
+  background: #111;
+  color: #fff;
+  cursor: pointer;
+}
+
+
+
+.results-wrapper { overflow: visible; position: relative; display: flex; justify-content: center; margin-top: 1.6rem; }
+
+.results-grid {
+
+  width: min(1120px, 100%);
+
+  display: grid;
+
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  grid-auto-rows: 1fr;
+
+  gap: .9rem;
+
+  transition: opacity 0.5s ease, transform 0.5s ease;
+
+  opacity: 1;
+
+}
+
+.results-grid .carousel-card{
+  max-width:none;
+  width:100%;
+  height:280px;
+  border-radius:14px;
+}
+
+.results-grid .card-image{
+  height:128px;
+  flex:0 0 128px;
+}
+
+.results-grid .card-content{
+  height:auto;
+  min-height:0;
+  flex:1 1 auto;
+  padding:.72rem;
+}
+
+.results-grid .card-content h3{
+  font-size:.98rem;
+  margin-bottom:.35rem;
+}
+
+.results-grid .card-content .description {
+  font-size: .84rem;
+  margin-bottom: .4rem;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3; /* soporte actual */
+  line-clamp: 3;        /* propiedad estándar */
+  overflow: hidden;
+}
+
+body.lite-search .results-grid,
+body.lite-search .results-grid .carousel-card,
+body.lite-search .results-grid .card-image img {
+  transition: none !important;
+}
+
+body.lite-search .results-grid {
+  transition: opacity .18s ease !important;
+}
+
+body.lite-search .results-grid .carousel-card {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.counter { margin: 1.6rem 0 .8rem; text-align: center; font-weight: bold; color: #333; }
+
+.pagination { display: flex; justify-content: center; align-items: center; margin-top: 1rem; flex-wrap: wrap; gap: 0.36rem; }
+
+.search-section.is-closing-results .results-wrapper,
+.search-section.is-closing-results .counter,
+.search-section.is-closing-results .pagination,
+.search-section.is-closing-results #closeResultsContainer {
+  opacity: 0;
+  transition: opacity .22s ease;
+  pointer-events: none;
+}
+
+.pagination button {
+
+  padding: 0.5rem 0.8rem;
+
+  border: 1px solid #333;
+
+  background: #fff;
+
+  cursor: pointer;
+
+  border-radius: 7px;
+
+  transition: all 0.25s ease;
+
+}
+
+.pagination button:hover:not(:disabled) { background: #333; color: #fff; transform: translateY(-1px); }
+
+.pagination button.active { background: #333; color: #fff; }
+
+.pagination button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.close-results-btn {
+
+  background: #dc3545;
+
+  color: #fff;
+
+  border: none;
+
+  border-radius: 7px;
+
+  padding: 0.55rem 1rem;
+
+  cursor: pointer;
+
+  transition: background 0.2s ease, transform 0.2s ease;
+
+}
+
+.close-results-btn:hover { background: #b02a37; transform: translateY(-1px); }
+
+
+
+#businessPanel {
+
+  position: relative;
+
+  width: 100%;
+
+  background: var(--yellow-strong);
+
+  color: #000;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  padding: 1.5rem 0;
+
+  font-weight: bold;
+
+  font-size: 1rem;
+
+  box-shadow: 0 -3px 10px rgba(0,0,0,0.1);
+
+  gap: 1rem;
+
+  margin-top: 2rem;
+
+}
+
+.panel-header { width: 100%; text-align: center; font-size: 2.2rem; font-weight: bold; margin-bottom: 2rem; }
+
+.panel-grid {
+
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  grid-template-rows: auto auto;
+
+  border-top: 2px solid #555;
+
+}
+
+.grid-item {
+
+  padding: 2rem;
+
+  font-size: 1.4rem;
+
+  font-weight: bold;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  text-align: center;
+
+}
+
+.item-open { border-right: 2px solid #555; border-bottom: 2px solid #555; }
+
+.item-closed { border-bottom: 2px solid #555; }
+
+.item-opening { border-right: 2px solid #555; }
+
+.grid-item span { font-size: 2.5rem; margin-left: 15px; color: #333; }
+
+
+
+.auth-dropdown {
+
+  position: absolute;
+
+  top: 50px;
+
+  right: 0;
+
+  width: 320px;
+
+  background: var(--white);
+
+  border-radius: 10px;
+
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+
+  padding: 1rem;
+
+  display: none;
+
+  z-index: 200;
+
+  transition: transform 0.3s ease, opacity 0.3s ease;
+
+  transform: translateY(-20px);
+
+  opacity: 0;
+
+}
+
+.auth-dropdown.show { display: block; transform: translateY(0); opacity: 1; }
+
+.auth-dropdown .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+
+.auth-dropdown .tabs button {
+
+  flex: 1;
+
+  padding: 0.5rem;
+
+  border: none;
+
+  background: var(--yellow-strong);
+
+  font-weight: bold;
+
+  cursor: pointer;
+
+  border-radius: 6px;
+
+  transition: background 0.3s ease;
+
+}
+
+.auth-dropdown .tabs button.active { background: var(--yellow-soft); }
+
+.auth-dropdown input {
+
+  width: 100%;
+
+  margin-bottom: 0.5rem;
+
+  padding: 0.7rem;
+
+  border-radius: 6px;
+
+  border: 1px solid #ccc;
+
+}
+
+.auth-dropdown button { width: 100%; background: #000; color: #fff; padding: 0.7rem; border: none; border-radius: 6px; cursor: pointer; }
+
+.user-btn img {
+
+  pointer-events: none;
+
+  width: 54px;
+
+  height: 54px;
+
+  border-radius: 50%;
+
+  display: block;
+
+  border: 2px solid rgba(0,0,0,.22);
+
+}
+
+.user-btn{
+  padding: 0;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.user-btn:hover img{
+  border-color: rgba(0,0,0,.45);
+}
+
+.avatar-unread-dot{
+  position:absolute;
+  left:50%;
+  bottom:-6px;
+  transform:translateX(-50%);
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:#111;
+  box-shadow:0 0 0 2px rgba(243,208,68,.96);
+  display:none;
+}
+
+.user-btn.has-unread .avatar-unread-dot{
+  display:block;
+}
+
+.user-menu {
+
+  position: absolute;
+
+  top: calc(100% + 8px);
+
+  right: 0;
+
+  margin-top: 0;
+
+  background: var(--white);
+
+  border-radius: 10px;
+
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+
+  display: none;
+
+  flex-direction: column;
+
+  overflow: hidden;
+
+  z-index: 200;
+
+  min-width: 220px;
+
+}
+
+.user-menu.show { display: flex; transform: translateY(0); opacity: 1; }
+
+.user-menu button {
+
+  padding: 0.8rem 1rem;
+
+  border: none;
+
+  background: none;
+
+  text-align: left;
+
+  cursor: pointer;
+
+  width: 100%;
+
+  transition: background 0.2s;
+
+  color: #000;
+
+}
+
+.user-menu button:hover { background: var(--yellow-soft); }
+
+
+
+footer {
+
+  background: var(--yellow-strong);
+
+  padding: 1.8rem 1rem;
+
+  text-align: center;
+
+  font-weight: bold;
+
+  border-top: 1px solid rgba(0,0,0,.08);
+
+}
+.user-menu button.msg-unread{
+  background:#e9f9e9;
+  font-weight:800;
+}
+.user-menu button.msg-unread .menu-msg-dot{
+  display:inline-block;
+}
+.menu-msg-dot{
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background:#111;
+  margin-left:auto;
+  display:none;
+}
+.menu-msg-label{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  width:100%;
+}
+.incoming-msg-toast-wrap{
+  position:fixed;
+  left:14px;
+  bottom:14px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  z-index:9999;
+}
+.incoming-msg-toast{
+  background:#111;
+  color:#fff;
+  border-radius:10px;
+  padding:10px 12px;
+  box-shadow:0 10px 26px rgba(0,0,0,.28);
+  font-weight:700;
+  max-width:min(86vw, 380px);
+  cursor:pointer;
+  border:1px solid rgba(255,255,255,.16);
+}
+.incoming-msg-toast:hover{filter:brightness(1.06)}
+
+.feedback-section{
+  max-width: 980px;
+  margin: 0 auto 2rem;
+  padding: 0 1rem;
+}
+.feedback-card{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:14px;
+  box-shadow:0 6px 16px rgba(0,0,0,.06);
+  overflow:hidden;
+}
+.feedback-head{
+  background:linear-gradient(180deg,#fff8dc,#fff);
+  border-bottom:1px solid var(--border);
+  padding:.8rem 1rem;
+  font-weight:800;
+}
+.feedback-form{
+  display:grid;
+  gap:.72rem;
+  padding:.85rem;
+  background:#fff;
+}
+.feedback-form label{
+  display:grid;
+  gap:.36rem;
+  font-weight:700;
+  color:#222;
+}
+.feedback-form input,
+.feedback-form textarea{
+  width:100%;
+  border:1px solid #d2dceb;
+  border-radius:10px;
+  padding:.6rem .7rem;
+  font:inherit;
+}
+.feedback-form textarea{
+  min-height:110px;
+  resize:vertical;
+}
+.feedback-actions{
+  display:flex;
+  justify-content:flex-end;
+}
+.feedback-actions button{
+  border:none;
+  border-radius:10px;
+  background:#111;
+  color:#fff;
+  font-weight:800;
+  cursor:pointer;
+  padding:.62rem .9rem;
+}
+.feedback-note{
+  color:#5e6d83;
+  font-size:.84rem;
+}
+.feedback-thanks-modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:1300;
+  padding:16px;
+}
+.feedback-thanks-modal.show{display:flex}
+.feedback-thanks-card{
+  width:min(460px,95vw);
+  background:#fff;
+  border:1px solid #dbe3ee;
+  border-radius:14px;
+  box-shadow:0 18px 44px rgba(0,0,0,.22);
+  padding:16px;
+}
+.feedback-thanks-title{
+  font-size:1.02rem;
+  font-weight:800;
+  margin-bottom:10px;
+}
+.feedback-thanks-actions{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:12px;
+}
+.feedback-thanks-actions button{
+  border:none;
+  border-radius:10px;
+  background:#111;
+  color:#fff;
+  font-weight:800;
+  cursor:pointer;
+  padding:.58rem .95rem;
+}
+.assistant-toggle{
+  position:fixed;
+  right:16px;
+  bottom:16px;
+  border:none;
+  border-radius:999px;
+  background:#111;
+  color:#fff;
+  padding:.72rem 1rem;
+  font-weight:800;
+  cursor:pointer;
+  z-index:1200;
+}
+.assistant-panel{
+  position:fixed;
+  right:16px;
+  bottom:72px;
+  width:min(380px,92vw);
+  max-height:min(72vh,620px);
+  background:#fff;
+  border:1px solid #dbe4ef;
+  border-radius:14px;
+  box-shadow:0 18px 40px rgba(0,0,0,.18);
+  display:none;
+  flex-direction:column;
+  overflow:hidden;
+  z-index:1200;
+}
+.assistant-panel.open{display:flex}
+.assistant-head{
+  padding:.75rem .9rem;
+  background:linear-gradient(180deg,#fff8dc,#fff);
+  border-bottom:1px solid #e6edf6;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-weight:800;
+}
+.assistant-close{
+  border:none;
+  border-radius:8px;
+  background:#111;
+  color:#fff;
+  font-weight:800;
+  padding:.35rem .55rem;
+  cursor:pointer;
+}
+.assistant-list{
+  padding:.75rem;
+  overflow:auto;
+  background:#f8fbff;
+  display:flex;
+  flex-direction:column;
+  gap:.5rem;
+  min-height:220px;
+}
+.assistant-msg{
+  max-width:92%;
+  border-radius:10px;
+  padding:.5rem .65rem;
+  border:1px solid #e5ebf5;
+  white-space:pre-wrap;
+  word-break:break-word;
+}
+.assistant-msg.bot{align-self:flex-start;background:#fff}
+.assistant-msg.user{align-self:flex-end;background:#111;color:#fff;border-color:#111}
+.assistant-form{
+  border-top:1px solid #e5ebf5;
+  background:#fff;
+  padding:.65rem;
+  display:flex;
+  gap:.45rem;
+}
+.assistant-input{
+  flex:1;
+  border:1px solid #cfd9ea;
+  border-radius:10px;
+  padding:.55rem .62rem;
+  font:inherit;
+}
+.assistant-send{
+  border:none;
+  border-radius:10px;
+  background:#111;
+  color:#fff;
+  font-weight:800;
+  padding:.55rem .72rem;
+  cursor:pointer;
+}
+
+
+
+@media (max-width: 1200px) {
+
+  .results-grid { gap: .8rem; }
+
+}
+
+@media (max-width: 768px) {
+
+  header { grid-template-columns: auto 1fr auto; padding: .65rem .8rem; }
+
+  #time { font-size: 1.2rem; }
+
+  .weather { font-size: .8rem; }
+
+  .header-actions { gap: .4rem; }
+  .header-separator { font-size: .9rem; }
+  .icon-action-btn, .user-btn { width: 52px; height: 52px; }
+  .icon-action-btn img { width: 30px; height: 30px; }
+  #btnScanQr { width: 52px; height: 52px; }
+  #btnScanQr img { width: 46px; height: 46px; }
+  .user-btn img { width: 46px; height: 46px; }
+
+  .carousel-card { flex: 0 0 80vw; }
+
+  .search-section { padding: 2rem .8rem 1.5rem; }
+
+  .search-box { padding: .5rem; }
+
+  .results-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .45rem; }
+  body.android-device .results-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .results-grid .carousel-card { height: 190px; border-radius: 10px; }
+  .results-grid .card-image { height: 88px; flex-basis: 88px; }
+  .results-grid .tag { top: 6px; left: 6px; padding: .2rem .45rem; font-size: .64rem; }
+  .results-grid .card-content { padding: .5rem; }
+  .results-grid .card-content h3 { font-size: .8rem; margin-bottom: .2rem; }
+  .results-grid .card-content .description { display: none; }
+  .feedback-actions{justify-content:stretch}
+  .feedback-actions button{width:100%}
+
+}
+
+@media (max-width: 600px) {
+
+  .panel-header { font-size: 1.6rem; }
+
+  .grid-item { font-size: 1rem; padding: 1rem; }
+
+  .grid-item span { font-size: 1.8rem; }
+
+}
+
+.ios-pwa-hint{
+  position:fixed;
+  left:12px;
+  right:12px;
+  bottom:12px;
+  z-index:1400;
+  background:#111;
+  color:#fff;
+  border-radius:12px;
+  padding:.8rem .9rem;
+  box-shadow:0 14px 26px rgba(0,0,0,.25);
+  display:none;
+  font-size:.92rem;
+  line-height:1.35;
+}
+.ios-pwa-hint.show{display:block}
+.ios-pwa-hint button{
+  margin-top:.55rem;
+  border:none;
+  border-radius:8px;
+  background:#f3d044;
+  color:#111;
+  font-weight:800;
+  padding:.42rem .7rem;
+  cursor:pointer;
+}
+
+</style>
+
+
+<link rel='stylesheet' href='/ui_public.css'>
+<script defer src='/ui_public.js'></script>
+</head>
+
+<body>
+
+
+
+<header>
+
+  <!-- LOGO -->
+
+  <div class="logo">
+
+    <img id="headerLogoTse" src="/icono/tsev2_beta.png" alt="TodoSevillaEste" width="6%" style="cursor:pointer;">
+    
+
+  </div>
+
+
+
+  <!-- CENTRO: hora y clima -->
+
+  <div class="center-info">
+
+    <div id="time"></div>
+
+    <div class="weather" id="weather"></div>
+
+  </div>
+
+
+
+  <!-- DERECHA: QR + perfil -->
+
+  <div class="header-actions">
+
+    <button id="btnScanQr" class="icon-action-btn" onclick="goQrScan()" title="Lector QR">
+      <img src="/icono/qr.png" alt="QR">
+    </button>
+    <span class="header-separator">|</span>
+
+    <div class="auth-anchor">
+      <button id="guestProfileBtn" class="user-btn" title="Cuenta">
+        <img src="/icono/perfil_iniciar.png" alt="Iniciar sesión">
+      </button>
+
+      <div id="guestMenu" class="user-menu" style="display:none;">
+        <button onclick="goLogin()">🔑 Iniciar sesión</button>
+        <button onclick="goRegister()">📝 Registrarse</button>
+      </div>
+
+      <button id="userBtn" class="user-btn" style="display:none;" title="Mi perfil">
+        <img id="userAvatar" src="/img/default-avatar.png" alt="Perfil">
+      </button>
+
+      <div id="userMenu" class="user-menu" style="display:none;">
+        <div id="usernameDisplay" style="padding:0.5rem 1rem; font-weight:bold; border-bottom:1px solid #eee;"></div>
+        <button id="menuMessagesBtn" onclick="goMessages()"><span class="menu-msg-label">💬 Mensajes <span class="menu-msg-dot" aria-hidden="true"></span></span></button>
+        <button onclick="location.href='/account/settings/'">⚙️ Configuración</button>
+        <button onclick="logout()">🚪 Cerrar sesión</button>
+      </div>
+    </div>
+
+
+
+  </div>
+
+
+
+  <!-- Dropdown login/register -->
+
+  
+
+</header>
+
+
+
+
+
+
+
+<button id="assistantToggle" class="assistant-toggle" type="button">Asistente IA</button>
+<section id="assistantPanel" class="assistant-panel" aria-label="Chat asistente">
+  <div class="assistant-head">
+    <span>Asistente Todo Sevilla Este</span>
+    <button id="assistantClose" class="assistant-close" type="button">Cerrar</button>
+  </div>
+  <div id="assistantList" class="assistant-list"></div>
+  <form id="assistantForm" class="assistant-form">
+    <input id="assistantInput" class="assistant-input" type="text" maxlength="800" placeholder="Pregunta por negocios, horarios o servicios">
+    <button id="assistantSend" class="assistant-send" type="submit">Enviar</button>
+  </form>
+</section>
+
+
+
+<section class="carousel-container">
+
+  <br><br>
+
+  <div class="carousel" id="carousel">
+
+    <div class="carousel-track" id="carouselTrack"></div>
+
+  </div>
+
+</section>
+
+
+
+<section class="search-section">
+
+  <div class="search-box">
+
+    <input id="searchInput" placeholder="🔍 Escribe el nombre del negocio que buscas...">
+
+    <select id="categorySelect">
+
+      <option value="">📂 Todas las categorías</option>
+
+      <option value="Hostelería">🍽️ Hostelería</option>
+
+      <option value="Tiendas">🛍️ Tiendas</option>
+
+      <option value="Servicios">🔧 Servicios</option>
+
+    </select>
+
+    <button onclick="searchBusinesses(1)">Buscar</button>
+
+  </div>
+  <div style="text-align:center;color:#64748b;font-size:.9rem;margin-top:.55rem">
+    Consejo: primero escribe el nombre o elige una categoría y luego pulsa "Buscar".
+  </div>
+
+
+
+  <div class="results-wrapper">
+
+    <div class="results-grid" id="results"></div>
+
+  </div>
+
+  <br>
+
+  <div class="pagination" id="pagination"></div>
+
+  <div style="text-align:center; margin-top:0.5rem;" id="closeResultsContainer"></div>
+
+  <br>
+
+  <div class="counter" id="counter"></div>
+
+</section>
+
+
+
+
+
+
+
+<section id="businessAccessSection" class="business-access-section" style="display:none;">
+  <div class="business-access-card">
+    <div>
+      <div class="business-access-title">Negocio</div>
+      <div class="business-access-sub">Acceso al panel de gestión de negocio</div>
+    </div>
+    <button id="btnBizPanel" class="business-access-btn" onclick="goBusinessPanel()" title="Acceso para dueños de negocio">🏪 Panel de gestión</button>
+  </div>
+</section>
+
+<section id="businessPanel">
+
+  <br>
+
+  <div class="panel-header">
+
+    ¡Somos <span id="totalBiz">0</span> negocios!
+
+  </div>
+
+  
+
+  <div class="panel-grid">
+
+    <div class="grid-item item-open">
+
+      Negocios abiertos: <span id="openBiz">0</span>
+
+    </div>
+
+    <div class="grid-item item-closed">
+
+      Negocios cerrados: <span id="closedBiz">0</span>
+
+    </div>
+
+    <div class="grid-item item-opening">
+
+      Negocios a punto de abrir: <span id="openingSoon">0</span>
+
+    </div>
+
+    <div class="grid-item item-closing">
+
+      Negocios a punto de cerrar: <span id="closingSoon">0</span>
+
+    </div>
+
+  </div>
+
+</section>
+
+<br><br>
+
+<section class="feedback-section">
+  <div class="feedback-card">
+    <div class="feedback-head">Valoraciones, comentarios y mejoras</div>
+    <form id="feedbackForm" class="feedback-form" onsubmit="submitFeedback(event)">
+      <label for="feedbackSubject">Asunto</label>
+      <input id="feedbackSubject" type="text" maxlength="200" placeholder="Ejemplo: mejora en filtros de búsqueda" required>
+      <label for="feedbackBody">Descripción</label>
+      <textarea id="feedbackBody" maxlength="6000" placeholder="Cuéntanos qué mejorarías y por qué." required></textarea>
+      <label for="feedbackEmail" id="feedbackEmailLabel">Correo de contacto</label>
+      <input id="feedbackEmail" type="email" maxlength="255" placeholder="tuemail@dominio.com" required>
+      <div class="feedback-actions">
+        <button id="feedbackSendBtn" type="submit">Enviar</button>
+      </div>
+      <div id="feedbackNote" class="feedback-note">Enviado al equipo para revisión en el panel de administrador.</div>
+    </form>
+  </div>
+</section>
+<div id="feedbackThanksModal" class="feedback-thanks-modal" onclick="closeFeedbackThanksModal(event)">
+  <div class="feedback-thanks-card">
+    <div class="feedback-thanks-title">Tus comentarios nos ayudan a mejorar. Gracias.</div>
+    <div class="feedback-thanks-actions">
+      <button type="button" onclick="closeFeedbackThanksModal(event)">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+
+
+<footer>© 2026 Todo Sevilla Este</footer>
+
+<div id="iosPwaHint" class="ios-pwa-hint" aria-live="polite">
+  Para usar esta versión como app en iPhone: pulsa compartir y luego <strong>Añadir a pantalla de inicio</strong>.
+  <br>
+  <button type="button" onclick="dismissIosPwaHint()">Entendido</button>
+</div>
+
+
+
+<script>
+
+/* ===== CONFIG BASE URL ===== */
+
+const LOCAL_IP = '192.168.0.40';
+
+const PUBLIC_HOST = 'todosevillaeste.es';
+
+const currentHost = window.location.hostname;
+const isLocalHost = currentHost === "localhost" || currentHost === "127.0.0.1" || currentHost === LOCAL_IP;
+const resolvedHost = isLocalHost ? LOCAL_IP : (currentHost === PUBLIC_HOST ? PUBLIC_HOST : currentHost);
+const BASE_URL = `${window.location.protocol}//${resolvedHost}`;
+
+const API_URL = isLocalHost
+  ? `${BASE_URL}:8001/places`
+  : `${BASE_URL}/places`;
+const AGENT_API_BASE = isLocalHost
+  ? `${window.location.protocol}//${LOCAL_IP}:8000`
+  : "https://todosevillaeste.es";
+
+
+
+/* ===== VARIABLES ===== */
+
+let allBusinesses = [];
+let businessesById = new Map();
+
+let isPaused = false;
+
+const SPEED = 1.2;
+
+const track = document.getElementById('carouselTrack');
+
+let recentBusinesses = [];
+let currentSessionUser = null;
+let assistantBusy = false;
+const ASSISTANT_REQUEST_TIMEOUT_MS = 75000;
+const ASSISTANT_CHAT_ID_KEY = "tse_assistant_chat_id_v1";
+
+function setCardImageSrc(imgEl, src){
+  if(!imgEl || !src) return;
+  if(imgEl.getAttribute("src") === src) return;
+  imgEl.loading = "lazy";
+  imgEl.decoding = "async";
+  imgEl.setAttribute("fetchpriority", "low");
+  imgEl.src = src;
+}
+
+function getAssistantChatId(){
+  try{
+    let id = localStorage.getItem(ASSISTANT_CHAT_ID_KEY);
+    if(!id){
+      id = `web-${Date.now()}-${Math.random().toString(36).slice(2,10)}`;
+      localStorage.setItem(ASSISTANT_CHAT_ID_KEY, id);
+    }
+    return id;
+  }catch(_e){
+    return `web-${Date.now()}`;
+  }
+}
+
+function assistantAddMessage(role, text){
+  const list = document.getElementById("assistantList");
+  if(!list) return null;
+  const item = document.createElement("div");
+  item.className = `assistant-msg ${role === "user" ? "user" : "bot"}`;
+  item.textContent = text || "";
+  list.appendChild(item);
+  list.scrollTop = list.scrollHeight;
+  return item;
+}
+
+function setAssistantBusy(busy){
+  assistantBusy = !!busy;
+  const input = document.getElementById("assistantInput");
+  const send = document.getElementById("assistantSend");
+  if(input) input.disabled = assistantBusy;
+  if(send){
+    send.disabled = assistantBusy;
+    send.textContent = assistantBusy ? "..." : "Enviar";
+  }
+}
+
+function sleep(ms){
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function animateTokens(targetEl, text){
+  if(!targetEl) return;
+  const tokens = (String(text || "").match(/\S+\s*/g) || [String(text || "")]).filter(Boolean);
+  targetEl.textContent = "";
+  for(const token of tokens){
+    targetEl.textContent += token;
+    const list = document.getElementById("assistantList");
+    if(list) list.scrollTop = list.scrollHeight;
+    const delay = Math.max(30, Math.min(90, token.length * 8));
+    await sleep(delay);
+  }
+}
+
+async function sendAssistantMessage(text){
+  if(assistantBusy) return;
+  const clean = String(text || "").trim();
+  if(!clean) return;
+  assistantAddMessage("user", clean);
+  const botMsg = assistantAddMessage("bot", "Pensando...");
+  setAssistantBusy(true);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), ASSISTANT_REQUEST_TIMEOUT_MS);
+  try{
+    const res = await fetch(`${AGENT_API_BASE}/agents/public/chat/stream`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: clean, chat_id: getAssistantChatId() }),
+      signal: controller.signal
+    });
+    if(!res.ok){
+      const data = await res.json().catch(() => ({}));
+      const msg = typeof data.detail === "string" ? data.detail : "No se pudo obtener respuesta";
+      if(botMsg) botMsg.textContent = `Error: ${msg}`;
+      return;
+    }
+    if(!res.body){
+      if(botMsg) botMsg.textContent = "Sin respuesta.";
+      return;
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let full = "";
+    let chunkCount = 0;
+    const streamStartedAt = Date.now();
+    while(true){
+      const { done, value } = await reader.read();
+      if(done) break;
+      const piece = decoder.decode(value, { stream: true }).replace(/\u200b/g, "");
+      if(!piece) continue;
+      chunkCount += 1;
+      full += piece;
+      if(botMsg) botMsg.textContent = full;
+      const list = document.getElementById("assistantList");
+      if(list) list.scrollTop = list.scrollHeight;
+    }
+    full += decoder.decode().replace(/\u200b/g, "");
+    const finalText = full.trim() || "Sin respuesta.";
+    const streamElapsed = Date.now() - streamStartedAt;
+    const looksAutomatic = chunkCount <= 2 || streamElapsed < 700;
+    if(looksAutomatic){
+      await animateTokens(botMsg, finalText);
+    }else if(botMsg){
+      botMsg.textContent = finalText;
+    }
+  }catch(err){
+    if(err && err.name === "AbortError"){
+      if(botMsg) botMsg.textContent = "La respuesta tardó demasiado. Intenta de nuevo.";
+    }else{
+      if(botMsg) botMsg.textContent = "No hay conexion con el asistente en este momento.";
+    }
+  }finally{
+    clearTimeout(timeoutId);
+    setAssistantBusy(false);
+  }
+}
+
+function initFrontendAssistant(){
+  const panel = document.getElementById("assistantPanel");
+  const toggle = document.getElementById("assistantToggle");
+  const closeBtn = document.getElementById("assistantClose");
+  const form = document.getElementById("assistantForm");
+  const input = document.getElementById("assistantInput");
+  if(!panel || !toggle || !closeBtn || !form || !input) return;
+
+  const openPanel = () => {
+    panel.classList.add("open");
+    setTimeout(() => input.focus(), 40);
+  };
+  const closePanel = () => panel.classList.remove("open");
+
+  toggle.addEventListener("click", () => {
+    if(panel.classList.contains("open")) closePanel();
+    else openPanel();
+  });
+  closeBtn.addEventListener("click", closePanel);
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = input.value;
+    input.value = "";
+    await sendAssistantMessage(text);
+  });
+
+  assistantAddMessage("bot", "Hola. Soy el asistente de Todo Sevilla Este, estoy aqui para ayudarte.");
+}
+
+
+
+/* ===== RELOJ + CLIMA (cacheado en backend) ===== */
+let madridClock = null;
+const timeEl = document.getElementById('time');
+const weatherEl = document.getElementById('weather');
+
+function renderMadridClock(){
+  if(!madridClock) return;
+  const hh = String(madridClock.getHours()).padStart(2, "0");
+  const mm = String(madridClock.getMinutes()).padStart(2, "0");
+  timeEl.textContent = `${hh}:${mm}`;
+}
+
+async function loadRealtimeMeta(){
+  try {
+    const res = await fetch("/meta/realtime", { cache: "no-store" });
+    if(!res.ok) return;
+    const data = await res.json();
+    madridClock = data.madrid_iso ? new Date(data.madrid_iso) : null;
+    renderMadridClock();
+    weatherEl.textContent = data.weather_text || "--";
+  } catch(err){
+    console.error("No se pudo cargar meta realtime", err);
+  }
+}
+
+setInterval(() => {
+  if(!madridClock) return;
+  madridClock = new Date(madridClock.getTime() + 1000);
+  renderMadridClock();
+}, 1000);
+
+loadRealtimeMeta();
+setInterval(loadRealtimeMeta, 60000);
+
+
+/* ===== ESTADO (badge) ===== */
+
+function getStatusBadge(b){
+
+  if(!b) return '<span class="status-badge status-closed">Cerrado</span>';
+
+  const sevillaTime = new Date(new Date().toLocaleString("en-US",{timeZone:"Europe/Madrid"}));
+
+  const days = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+
+  const todayName = days[sevillaTime.getDay()];
+  const dateKey = `${sevillaTime.getFullYear()}-${String(sevillaTime.getMonth()+1).padStart(2,"0")}-${String(sevillaTime.getDate()).padStart(2,"0")}`;
+
+  const currentMins = sevillaTime.getHours()*60 + sevillaTime.getMinutes();
+
+  const regularSchedules = (b.opening_hours && b.opening_hours[todayName]) ? b.opening_hours[todayName] : [];
+  const special = b.special_days ? b.special_days[dateKey] : null;
+  let schedules = regularSchedules;
+  if(special){
+    if(special.mode === "closed"){
+      schedules = [];
+    }else if(Array.isArray(special.opening_hours)){
+      schedules = special.opening_hours;
+    }else if(special.mode !== "open"){
+      schedules = [];
+    }
+  }
+
+  const toMins = str => { const [h,m] = str.split(':').map(Number); return h*60+m; };
+
+  let status = {text:"Cerrado", class:"status-closed"};
+
+  for(const slot of schedules){
+
+    const start = toMins(slot.inicio), end = toMins(slot.fin);
+
+    if(currentMins >= start && currentMins < end){
+
+      status = (end-currentMins)<=30 ? {text:"Cierra pronto", class:"status-closing"} : {text:"Abierto", class:"status-open"};
+
+      break;
+
+    } else if(currentMins < start && (start-currentMins)<=15){
+
+      status = {text:"Abre pronto", class:"status-opening"};
+
+    }
+
+  }
+
+  return `<span class="status-badge ${status.class}">${status.text}</span>`;
+
+}
+
+
+
+/* ===== OBTENER ESTADO COMO STRING ===== */
+
+function getBusinessStatus(b){
+
+  if(!b) return "closed";
+
+  const sevillaTime = new Date(new Date().toLocaleString("en-US",{timeZone:"Europe/Madrid"}));
+
+  const days = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+
+  const todayName = days[sevillaTime.getDay()];
+  const dateKey = `${sevillaTime.getFullYear()}-${String(sevillaTime.getMonth()+1).padStart(2,"0")}-${String(sevillaTime.getDate()).padStart(2,"0")}`;
+
+  const currentMins = sevillaTime.getHours()*60 + sevillaTime.getMinutes();
+
+  const regularSchedules = (b.opening_hours && b.opening_hours[todayName]) ? b.opening_hours[todayName] : [];
+  const special = b.special_days ? b.special_days[dateKey] : null;
+  let schedules = regularSchedules;
+  if(special){
+    if(special.mode === "closed"){
+      schedules = [];
+    }else if(Array.isArray(special.opening_hours)){
+      schedules = special.opening_hours;
+    }else if(special.mode !== "open"){
+      schedules = [];
+    }
+  }
+
+  const toMins = str => { const [h,m] = str.split(':').map(Number); return h*60+m; };
+
+
+
+  let status = "closed";
+
+  for(const slot of schedules){
+
+    const start = toMins(slot.inicio), end = toMins(slot.fin);
+
+    if(currentMins >= start && currentMins < end){
+
+      status = (end-currentMins<=30) ? "closing" : "open";
+
+      break;
+
+    } else if(currentMins < start && (start-currentMins<=15)){
+
+      status = "opening";
+
+      break;
+
+    }
+
+  }
+
+  return status;
+
+}
+
+
+
+/* ===== CREAR TARJETA ===== */
+
+function createCardHTML(b){
+  const card = document.createElement('div');
+  card.className = 'carousel-card';
+  card.dataset.publicId = String(b.public_id || "");
+  card.style.cursor = "pointer";
+  card.onclick = () => {
+    if(!b.public_id) return;
+    location.href = `/negocio.html?id=${encodeURIComponent(b.public_id)}`;
+  };
+  card.innerHTML = `
+    <span class="tag">${b.category}</span>
+    <div class="card-image"><img src="${b.main_photo || `/img/${b.public_id}.webp`}" alt="${b.name}" class="dynamic-img" loading="lazy" decoding="async" fetchpriority="low"></div>
+
+    <div class="card-content">
+
+      <h3>${b.name}</h3>
+
+      <p class="description">${b.initial_phrase || ''}</p>
+
+      ${getStatusBadge(b)}
+
+    </div>
+
+  `;
+
+  const imgEl = card.querySelector('.dynamic-img');
+  imgEl.onerror = () => {
+    imgEl.onerror = null;
+    imgEl.src = "/img/placeholder.webp";
+  };
+
+  return card;
+}
+
+function setupBusinessCardNavigation(){
+  document.addEventListener("click", (e)=>{
+    const card = e.target.closest(".carousel-card");
+    if(!card) return;
+    const id = card.dataset.publicId;
+    if(!id) return;
+    location.href = `/negocio.html?id=${encodeURIComponent(id)}`;
+  });
+}
+
+function refreshVisibleSearchCards(){
+  const visibleCards = document.querySelectorAll('.results-wrapper .results-grid .carousel-card');
+  if(!visibleCards.length) return;
+
+  visibleCards.forEach(card => {
+    const publicId = Number(card.dataset.publicId);
+    if(!publicId) return;
+    const b = businessesById.get(publicId);
+    if(!b) return;
+
+    const tagEl = card.querySelector('.tag');
+    if(tagEl) tagEl.textContent = b.category || "";
+
+    const titleEl = card.querySelector('h3');
+    if(titleEl) titleEl.textContent = b.name || "";
+
+    const descEl = card.querySelector('.description');
+    if(descEl) descEl.textContent = b.initial_phrase || "";
+
+    const badgeEl = card.querySelector('.status-badge');
+    if(badgeEl) badgeEl.outerHTML = getStatusBadge(b);
+
+    const imgEl = card.querySelector('.dynamic-img');
+    if(imgEl){
+      const newSrc = b.main_photo || `/img/${b.public_id}.webp`;
+      setCardImageSrc(imgEl, newSrc);
+    }
+  });
+}
+
+
+/* ===== CARRUSEL INFINITO ===== */
+
+function addCardAtEnd(){
+
+  if(!allBusinesses.length) return;
+
+  let available = allBusinesses.length > 6 ? allBusinesses.filter(b => !recentBusinesses.includes(b.public_id)) : allBusinesses.slice();
+
+  if(!available.length){ recentBusinesses.length=0; available = allBusinesses.slice(); }
+
+  const b = available[Math.floor(Math.random()*available.length)];
+
+  track.appendChild(createCardHTML(b));
+
+  if(allBusinesses.length > 6){ recentBusinesses.push(b.public_id); if(recentBusinesses.length>6) recentBusinesses.shift(); }
+
+}
+
+
+
+function startCarouselAnimation(){
+
+  let offset = 0;
+
+  function animate(){
+
+    if(!isPaused){
+
+      offset += SPEED;
+
+      const first = track.children[0];
+
+      if(first){
+
+        const width = first.offsetWidth + parseFloat(getComputedStyle(track).gap);
+
+        if(offset >= width){ offset -= width; track.appendChild(track.removeChild(first)); }
+
+      }
+
+      track.style.transform = `translateX(-${offset}px)`;
+
+    }
+
+    requestAnimationFrame(animate);
+
+  }
+
+  animate();
+
+}
+
+
+
+document.getElementById('carousel').addEventListener('mouseenter', ()=>isPaused=true);
+
+document.getElementById('carousel').addEventListener('mouseleave', ()=>isPaused=false);
+
+
+
+/* ===== CERRAR RESULTADOS ===== */
+
+function closeResults() {
+  if(closingResultsInProgress) return;
+  const hadVisibleResults = !!document.querySelector('.results-wrapper .results-grid');
+  const searchSection = document.querySelector('.search-section');
+  const clearResultsUI = () => {
+    document.querySelector('.results-wrapper').innerHTML = '';
+    document.getElementById('pagination').innerHTML = '';
+    document.getElementById('closeResultsContainer').innerHTML = '';
+    document.getElementById('counter').textContent = '';
+    currentResults = [];
+    currentPage = 1;
+    searchActive = false;
+    if(searchSection) searchSection.classList.remove('is-closing-results');
+    closingResultsInProgress = false;
+  };
+
+  if(hadVisibleResults){
+    closingResultsInProgress = true;
+    if(searchSection) searchSection.classList.add('is-closing-results');
+    setTimeout(() => {
+      if(isAndroidDevice()){
+        scrollSearchSectionToTopIfAndroid();
+      } else {
+        scrollSearchBoxIntoView();
+      }
+      setTimeout(clearResultsUI, 340);
+    }, 220);
+    return;
+  }
+
+  if(isAndroidDevice()){
+    scrollSearchSectionToTopIfAndroid();
+  } else {
+    scrollSearchBoxIntoView();
+  }
+  clearResultsUI();
+}
+
+
+/* ===== BUSCADOR ===== */
+
+let currentPage = 1;
+let currentResults = [];
+let searchActive = false;
+let closingResultsInProgress = false;
+
+function isLowPerformanceDevice(){
+  const mem = Number(window.navigator.deviceMemory || 0);
+  const cores = Number(window.navigator.hardwareConcurrency || 0);
+  return (mem > 0 && mem <= 4) || (cores > 0 && cores <= 4);
+}
+
+function shouldUseLiteSearchRendering(){
+  return isLowPerformanceDevice() || window.matchMedia("(max-width: 768px)").matches;
+}
+
+function applySearchPerformanceClass(){
+  document.body.classList.toggle("lite-search", shouldUseLiteSearchRendering());
+}
+
+function scrollSearchSectionToTopIfAndroid(){
+  if(!isAndroidDevice()) return;
+  const section = document.querySelector('.search-section');
+  const header = document.querySelector('header');
+  if(!section) return;
+  const headerHeight = header ? header.offsetHeight : 0;
+  const targetTop = Math.max(0, section.getBoundingClientRect().top + window.scrollY - headerHeight - 8);
+  window.scrollTo({ top: targetTop, behavior: "smooth" });
+}
+
+function scrollSearchBoxIntoView(){
+  const searchBox = document.querySelector('.search-box');
+  const header = document.querySelector('header');
+  if(!searchBox) return;
+  const headerHeight = header ? header.offsetHeight : 0;
+  const targetTop = Math.max(0, searchBox.getBoundingClientRect().top + window.scrollY - headerHeight - 8);
+  window.scrollTo({ top: targetTop, behavior: "smooth" });
+}
+
+function getSearchItemsPerPage(){
+  if(isAndroidDevice() && window.matchMedia("(max-width: 768px)").matches) return 6;
+  return 9;
+}
+
+
+function searchBusinesses(page=1, fromPagination=false){
+  searchActive = true;
+  const itemsPerPage = getSearchItemsPerPage();
+  const resultsWrapper = document.querySelector('.results-wrapper');
+  const q = document.getElementById('searchInput').value.toLowerCase();
+
+  const cat = document.getElementById('categorySelect').value;
+
+
+
+  currentResults = allBusinesses.filter(b =>
+
+    (!q || b.name.toLowerCase().includes(q)) &&
+
+    (!cat || b.category === cat)
+
+  );
+
+
+
+  const totalPages = Math.ceil(currentResults.length/itemsPerPage);
+
+  if(page<1) page=1;
+
+  if(page>totalPages) page=totalPages;
+
+  currentPage = page;
+
+
+
+  const newGrid = document.createElement('div');
+
+  newGrid.className='results-grid';
+
+  newGrid.id='results';
+
+  const useLiteRender = shouldUseLiteSearchRendering();
+  newGrid.style.opacity = 0;
+  newGrid.style.transform = useLiteRender ? 'none' : 'translateX(50px)';
+
+
+
+  if(currentResults.length){
+    const fragment = document.createDocumentFragment();
+
+    const start=(currentPage-1)*itemsPerPage;
+
+    const end=start+itemsPerPage;
+
+    currentResults.slice(start,end).forEach(b=>{
+
+      const card=createCardHTML(b);
+
+      card.style.flex='none';
+
+      card.style.width='100%';
+
+      fragment.appendChild(card);
+
+    });
+    newGrid.appendChild(fragment);
+
+  } else { newGrid.innerHTML='<p>No se encontraron negocios. Prueba con otro nombre o categoría.</p>'; }
+
+
+
+  resultsWrapper.innerHTML='';
+
+  resultsWrapper.appendChild(newGrid);
+
+  requestAnimationFrame(() => {
+    if(useLiteRender){
+      newGrid.style.opacity = 1;
+    } else {
+      newGrid.style.opacity = 1;
+      newGrid.style.transform = 'translateX(0)';
+    }
+  });
+
+
+
+  document.getElementById('counter').textContent = `${currentResults.length} resultados encontrados`;
+
+  renderPagination(currentPage,totalPages);
+
+  if(fromPagination){
+    scrollSearchSectionToTopIfAndroid();
+  } else {
+    scrollSearchBoxIntoView();
+  }
+
+}
+
+
+
+document.getElementById('searchInput').addEventListener('keydown', e=>{
+
+  if(e.key==='Enter'){ e.preventDefault(); searchBusinesses(1); }
+
+});
+
+
+
+/* ===== PAGINACIÓN ===== */
+
+function renderPagination(current,totalPages){
+
+  const paginationDiv=document.getElementById('pagination');
+
+  paginationDiv.innerHTML='';
+
+
+
+  if(totalPages>0){
+
+    const prevBtn=document.createElement('button');
+
+    prevBtn.textContent='⬅️';
+
+    prevBtn.disabled=current===1;
+
+    prevBtn.onclick=()=>searchBusinesses(current-1, true);
+
+    paginationDiv.appendChild(prevBtn);
+
+
+
+    for(let i=1; i<=totalPages; i++){
+
+      const btn = document.createElement('button');
+
+      btn.textContent = i;
+
+      if(i===current) btn.classList.add('active');
+
+      btn.onclick = () => searchBusinesses(i, true);
+
+      paginationDiv.appendChild(btn);
+
+    }
+
+
+
+    const nextBtn=document.createElement('button');
+
+    nextBtn.textContent='➡️';
+
+    nextBtn.disabled=current===totalPages;
+
+    nextBtn.onclick=()=>searchBusinesses(current+1, true);
+
+    paginationDiv.appendChild(nextBtn);
+
+  }
+
+
+
+  const closeContainer=document.getElementById('closeResultsContainer');
+
+  closeContainer.innerHTML='';
+
+  const closeBtn=document.createElement('button');
+
+  closeBtn.textContent='❌ Cerrar resultados';
+
+  closeBtn.classList.add('close-results-btn');
+
+  closeBtn.onclick=closeResults;
+
+  closeContainer.appendChild(closeBtn);
+
+}
+
+
+
+/* ===== FETCH NEGOCIOS ===== */
+
+async function fetchBusinesses(){
+
+  try{
+
+    const res = await fetch(API_URL);
+
+    const data = await res.json();
+
+    allBusinesses = data.filter(b=>b.active);
+    businessesById = new Map(allBusinesses.map(b => [Number(b.public_id), b]));
+
+
+
+    // --- ÚNICO CAMBIO: Actualizamos el panel aquí, cuando ya hay datos ---
+
+    updateBusinessPanel();
+
+
+
+    // Actualizar carrusel existente
+
+    track.querySelectorAll('.carousel-card').forEach(card=>{
+
+      const name=card.querySelector('h3').textContent;
+
+      const b=allBusinesses.find(biz=>biz.name===name);
+
+      if(b){
+
+        card.querySelector('.description').textContent=b.initial_phrase||'';
+
+        const badgeEl=card.querySelector('.status-badge');
+
+        if(badgeEl){ badgeEl.outerHTML=getStatusBadge(b); }
+
+        const imgEl=card.querySelector('.dynamic-img');
+
+        const newSrc = b.main_photo || `/img/${b.public_id}.webp`;
+
+        setCardImageSrc(imgEl, newSrc);
+
+      }
+
+    });
+
+
+
+    const existingNames=Array.from(track.children).map(card=>card.querySelector('h3').textContent);
+
+    const newBusinesses=allBusinesses.filter(b=>!existingNames.includes(b.name));
+
+    newBusinesses.forEach(b=>{ track.appendChild(createCardHTML(b)); });
+
+
+
+    if(allBusinesses.length>6){ while(recentBusinesses.length>6) recentBusinesses.shift(); }
+
+    if(searchActive){
+      refreshVisibleSearchCards();
+    }
+
+  } catch(err){ console.error("Error al cargar negocios", err); }
+}
+
+
+/* ===== PANEL DE NEGOCIOS ===== */
+
+function updateBusinessPanel(){
+
+  let total = allBusinesses.length;
+
+  let opening = 0, open = 0, closing = 0, closed = 0;
+
+
+
+  allBusinesses.forEach(b => {
+
+    const status = getBusinessStatus(b);
+
+    if(status==="open") open++;
+
+    else if(status==="closing") closing++;
+
+    else if(status==="opening") opening++;
+
+    else closed++;
+
+  });
+
+
+
+  // Animación tipo count-up
+
+  const animateNumber = (id, newValue) => {
+
+    const el = document.getElementById(id);
+
+    const currentValue = parseInt(el.textContent) || 0;
+
+    const diff = newValue - currentValue;
+
+    const duration = 1000;
+
+    const steps = Math.abs(diff);
+
+    if(steps===0) { el.textContent = newValue; return; } // Ajuste menor para evitar errores si steps es 0
+
+    let step=0;
+
+    const interval = duration / steps;
+
+    const increment = diff / steps;
+
+    const counter = setInterval(()=>{
+
+      step++;
+
+      el.textContent = Math.round(currentValue + increment*step);
+
+      if(step>=steps) {
+
+        el.textContent = newValue; // Aseguramos el valor final exacto
+
+        clearInterval(counter);
+
+      }
+
+    }, interval);
+
+  }
+
+
+
+  animateNumber("totalBiz", total);
+
+  animateNumber("openingSoon", opening);
+
+  animateNumber("openBiz", open);
+
+  animateNumber("closingSoon", closing);
+
+  animateNumber("closedBiz", closed);
+
+}
+
+
+
+const API_BASE = `${BASE_URL}:8001`; // Ajusta al puerto de tu backend auth
+
+function escHtml(v){
+  return String(v ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
+}
+function setFeedbackNote(message){
+  const note = document.getElementById("feedbackNote");
+  if(note) note.textContent = message || "";
+}
+
+function showFeedbackThanksModal(){
+  const modal = document.getElementById("feedbackThanksModal");
+  if(modal) modal.classList.add("show");
+}
+
+function closeFeedbackThanksModal(event){
+  if(event){
+    const t = event.target;
+    const isBackdrop = !!(t && t.id === "feedbackThanksModal");
+    const isButton = !!(t && t.tagName && String(t.tagName).toLowerCase() === "button");
+    if(!isBackdrop && !isButton && event.type !== "keydown") return;
+  }
+  const modal = document.getElementById("feedbackThanksModal");
+  if(modal) modal.classList.remove("show");
+}
+
+function updateFeedbackFormUserContext(){
+  const emailInput = document.getElementById("feedbackEmail");
+  const emailLabel = document.getElementById("feedbackEmailLabel");
+  if(!emailInput || !emailLabel) return;
+  const logged = !!(currentSessionUser && currentSessionUser.id);
+  if(logged){
+    const accountEmail = String((currentSessionUser && currentSessionUser.email) || "").trim();
+    emailInput.value = accountEmail;
+    emailInput.readOnly = true;
+    emailInput.disabled = true;
+    emailInput.required = false;
+    emailLabel.textContent = "Correo de la cuenta vinculada";
+    setFeedbackNote("Si tienes sesión iniciada, la mejora se vincula automáticamente a tu correo.");
+    return;
+  }
+  emailInput.readOnly = false;
+  emailInput.disabled = false;
+  emailInput.required = true;
+  emailInput.value = "";
+  emailLabel.textContent = "Correo de contacto";
+  setFeedbackNote("Si no tienes cuenta, indica un correo válido para poder contactarte.");
+}
+
+async function submitFeedback(event){
+  if(event) event.preventDefault();
+  const subjectInput = document.getElementById("feedbackSubject");
+  const bodyInput = document.getElementById("feedbackBody");
+  const emailInput = document.getElementById("feedbackEmail");
+  const sendBtn = document.getElementById("feedbackSendBtn");
+  if(!subjectInput || !bodyInput || !emailInput || !sendBtn) return;
+
+  const customSubject = String(subjectInput.value || "").trim();
+  const body = String(bodyInput.value || "").trim();
+  const isLogged = !!(currentSessionUser && currentSessionUser.id);
+  const email = String(emailInput.value || "").trim().toLowerCase();
+  if(customSubject.length < 3){
+    setFeedbackNote("El asunto debe tener al menos 3 caracteres.");
+    return;
+  }
+  if(body.length < 6){
+    setFeedbackNote("La descripción debe tener al menos 6 caracteres.");
+    return;
+  }
+  if(!isLogged){
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if(!emailRegex.test(email)){
+      setFeedbackNote("Debes indicar un correo válido.");
+      return;
+    }
+  }
+
+  const form = new FormData();
+  form.append("subject", customSubject);
+  form.append("body", body);
+  if(email) form.append("email", email);
+  const endpoint = "/feedback/submissions";
+
+  sendBtn.disabled = true;
+  setFeedbackNote("Enviando mejora...");
+  try{
+    const res = await fetch(endpoint, {
+      method: "POST",
+      credentials: "include",
+      body: form
+    });
+    const data = await res.json().catch(()=> ({}));
+    if(!res.ok){
+      setFeedbackNote(data.detail || "No se pudo enviar la mejora.");
+      return;
+    }
+    subjectInput.value = "";
+    bodyInput.value = "";
+    setFeedbackNote("Mejora enviada correctamente.");
+    showFeedbackThanksModal();
+  }catch(_e){
+    setFeedbackNote("No se pudo enviar la mejora.");
+  }finally{
+    sendBtn.disabled = false;
+  }
+}
+
+
+
+document.getElementById("guestProfileBtn").onclick = () => {
+  const guestMenu = document.getElementById("guestMenu");
+  const userMenu = document.getElementById("userMenu");
+  if(userMenu) userMenu.style.display = "none";
+  guestMenu.style.display = guestMenu.style.display === "flex" ? "none" : "flex";
+};
+
+document.getElementById("userBtn").onclick = () => {
+  const guestMenu = document.getElementById("guestMenu");
+  const userMenu = document.getElementById("userMenu");
+  if(guestMenu) guestMenu.style.display = "none";
+  userMenu.style.display = userMenu.style.display === "flex" ? "none" : "flex";
+  if(userMenu.style.display === "flex"){
+    refreshUnreadMessagesIndicator(true);
+  }
+};
+
+const headerLogoTse = document.getElementById("headerLogoTse");
+function userHasAdminRole(){
+  return !!(currentSessionUser && currentSessionUser.roles && currentSessionUser.roles.admin === true);
+}
+
+function updateHeaderLogoAccess(){
+  if(!headerLogoTse) return;
+  const isAdmin = userHasAdminRole();
+  headerLogoTse.style.pointerEvents = isAdmin ? "auto" : "none";
+  headerLogoTse.style.cursor = isAdmin ? "pointer" : "default";
+  headerLogoTse.style.opacity = isAdmin ? "1" : "0.78";
+  headerLogoTse.title = isAdmin ? "Abrir versiones" : "";
+}
+
+if(headerLogoTse){
+  document.addEventListener("click", (ev) => {
+    const target = ev.target && ev.target.closest ? ev.target.closest("#headerLogoTse") : null;
+    if(!target) return;
+    if(!userHasAdminRole()){
+      ev.preventDefault();
+      ev.stopPropagation();
+      if(typeof ev.stopImmediatePropagation === "function") ev.stopImmediatePropagation();
+      return;
+    }
+    ev.preventDefault();
+    window.location.href = "/versiones";
+  }, true);
+  updateHeaderLogoAccess();
+}
+
+
+document.addEventListener("click", e => {
+  const guestMenu = document.getElementById("guestMenu");
+  const userMenu = document.getElementById("userMenu");
+  const guestBtn = document.getElementById("guestProfileBtn");
+  const userBtn = document.getElementById("userBtn");
+  if(guestMenu && guestBtn && !guestMenu.contains(e.target) && !guestBtn.contains(e.target)){
+    guestMenu.style.display = "none";
+  }
+  if(userMenu && userBtn && !userMenu.contains(e.target) && !userBtn.contains(e.target)){
+    userMenu.style.display = "none";
+  }
+
+});
+
+function logout() {
+
+  fetch(`/auth/logout`, { method:"POST", credentials:"include" })
+
+  .finally(()=> {
+    stopUnreadPolling();
+    setUnreadMessagesUI(0);
+    location.reload();
+  });
+
+}
+
+
+
+// Mostrar u ocultar foto según sesión
+
+async function checkSession() {
+
+  try {
+
+    const res = await fetch("/auth/me", { credentials: "include", cache: "no-store" }); // ruta relativa
+
+  if(res.ok){
+
+    const data = await res.json();
+    currentSessionUser = data;
+
+    document.getElementById("guestProfileBtn").style.display = "none";
+    document.getElementById("userBtn").style.display = "inline-block";
+    document.getElementById("guestMenu").style.display = "none";
+
+    document.getElementById("userAvatar").src = data.avatar || "/img/default-avatar.png";
+
+    
+
+    // Mostrar nombre de usuario
+
+    document.getElementById("usernameDisplay").textContent = data.username || "Usuario";
+    updateHeaderLogoAccess();
+    updateFeedbackFormUserContext();
+    await updateBusinessAccess();
+    startUnreadPolling();
+    await refreshUnreadMessagesIndicator(true);
+    ensurePushSubscriptionForCurrentUser();
+    return true;
+
+  } else {
+    currentSessionUser = null;
+
+    document.getElementById("guestProfileBtn").style.display = "inline-block";
+    document.getElementById("userBtn").style.display = "none";
+    document.getElementById("userMenu").style.display = "none";
+
+    document.getElementById("usernameDisplay").textContent = "";
+    updateHeaderLogoAccess();
+    updateFeedbackFormUserContext();
+    hideBusinessAccess();
+    stopUnreadPolling();
+    setUnreadMessagesUI(0);
+    return false;
+
+  }
+
+
+
+  } catch(e){
+    currentSessionUser = null;
+
+    console.error(e);
+
+    document.getElementById("guestProfileBtn").style.display = "inline-block";
+    document.getElementById("userBtn").style.display = "none";
+    document.getElementById("userMenu").style.display = "none";
+    updateHeaderLogoAccess();
+    updateFeedbackFormUserContext();
+    hideBusinessAccess();
+    stopUnreadPolling();
+    setUnreadMessagesUI(0);
+    return false;
+
+  }
+
+}
+
+let unreadMessagesCount = 0;
+let unreadPollTimer = null;
+const unreadSnapshot = {};
+const notifiedMessageIds = {};
+
+function setUnreadMessagesUI(count){
+  unreadMessagesCount = Math.max(0, Number(count) || 0);
+  const userBtn = document.getElementById("userBtn");
+  const msgBtn = document.getElementById("menuMessagesBtn");
+  if(userBtn){
+    userBtn.classList.toggle("has-unread", unreadMessagesCount > 0);
+    let dot = userBtn.querySelector(".avatar-unread-dot");
+    if(!dot){
+      dot = document.createElement("span");
+      dot.className = "avatar-unread-dot";
+      dot.setAttribute("aria-hidden", "true");
+      userBtn.appendChild(dot);
+    }
+  }
+  if(msgBtn){
+    msgBtn.classList.toggle("msg-unread", unreadMessagesCount > 0);
+  }
+}
+
+async function refreshUnreadMessagesIndicator(force=false){
+  if(!currentSessionUser || !currentSessionUser.id){
+    setUnreadMessagesUI(0);
+    return;
+  }
+  if(!force && document.visibilityState === "hidden") return;
+  try{
+    const res = await fetch("/messages/chats", { credentials:"include", cache:"no-store" });
+    const data = await res.json().catch(()=> ({}));
+    if(!res.ok){
+      setUnreadMessagesUI(0);
+      return;
+    }
+    const chats = Array.isArray(data.chats) ? data.chats : [];
+    const totalUnread = chats.reduce((acc, c) => {
+      const unread = c && c.unread_count != null ? c.unread_count : 0;
+      return acc + Math.max(0, Number(unread) || 0);
+    }, 0);
+    setUnreadMessagesUI(totalUnread);
+    handleIncomingMessageNotifications(chats, force);
+  }catch(_e){
+    setUnreadMessagesUI(0);
+  }
+}
+
+function getToastWrap(){
+  let wrap = document.getElementById("incomingMsgToastWrap");
+  if(!wrap){
+    wrap = document.createElement("div");
+    wrap.id = "incomingMsgToastWrap";
+    wrap.className = "incoming-msg-toast-wrap";
+    document.body.appendChild(wrap);
+  }
+  return wrap;
+}
+
+function showIncomingMessageToast(username, chatId){
+  const wrap = getToastWrap();
+  const toast = document.createElement("button");
+  toast.type = "button";
+  toast.className = "incoming-msg-toast";
+  toast.textContent = `${username} te ha enviado un mensaje. Clica para ver.`;
+  toast.onclick = () => {
+    window.location.href = `/mensajes.html?chat=${encodeURIComponent(chatId)}`;
+  };
+  wrap.appendChild(toast);
+  setTimeout(() => {
+    if(toast.parentNode) toast.parentNode.removeChild(toast);
+  }, 6500);
+}
+
+async function showSystemIncomingNotification(username, chatId){
+  if(!("Notification" in window)) return;
+  let permission = Notification.permission;
+  if(permission === "default"){
+    try{
+      permission = await Notification.requestPermission();
+    }catch(_e){
+      return;
+    }
+  }
+  if(permission !== "granted") return;
+  const bodyText = `${username} te ha enviado un mensaje. Clica para ver.`;
+  const url = `/mensajes.html?chat=${encodeURIComponent(chatId)}`;
+  try{
+    if("serviceWorker" in navigator){
+      const reg = await navigator.serviceWorker.getRegistration();
+      if(reg && reg.showNotification){
+        await reg.showNotification("Nuevo mensaje", {
+          body: bodyText,
+          icon: "/icono/tsev2.png",
+          badge: "/icono/tsev2.png",
+          tag: `chat-${chatId}`,
+          renotify: true,
+          data: { url }
+        });
+        return;
+      }
+    }
+    const n = new Notification("Nuevo mensaje", { body: bodyText, icon: "/icono/tsev2.png" });
+    n.onclick = () => {
+      window.focus();
+      window.location.href = url;
+    };
+  }catch(_e){}
+}
+
+function handleIncomingMessageNotifications(chats, force){
+  if(!currentSessionUser || !currentSessionUser.id) return;
+  const candidates = [];
+  (Array.isArray(chats) ? chats : []).forEach((c) => {
+    const chatId = Number(c && c.id ? c.id : 0);
+    if(chatId <= 0) return;
+    const unread = Math.max(0, Number(c && c.unread_count != null ? c.unread_count : 0) || 0);
+    const lastMsgId = Number(c && c.last_message && c.last_message.id ? c.last_message.id : 0);
+    const key = String(chatId);
+    const prev = unreadSnapshot[key] || { unread: 0, lastMsgId: 0 };
+    unreadSnapshot[key] = { unread, lastMsgId };
+    const justBecameUnread = unread > 0 && prev.unread <= 0;
+    const newUnreadMessage = unread > 0 && lastMsgId > 0 && lastMsgId !== prev.lastMsgId;
+    if(unread > 0 && (justBecameUnread || newUnreadMessage)){
+      const sig = `${chatId}:${lastMsgId || unread}`;
+      if(notifiedMessageIds[sig]) return;
+      notifiedMessageIds[sig] = 1;
+      const username = (c && c.other_user && c.other_user.username) ? c.other_user.username : "Usuario";
+      candidates.push({ chatId, username });
+    }
+  });
+  if(force || candidates.length === 0) return;
+  const first = candidates[0];
+  showIncomingMessageToast(first.username, first.chatId);
+  showSystemIncomingNotification(first.username, first.chatId);
+}
+
+function startUnreadPolling(){
+  stopUnreadPolling();
+  refreshUnreadMessagesIndicator(true);
+  unreadPollTimer = setInterval(() => {
+    refreshUnreadMessagesIndicator(false);
+  }, 4000);
+}
+
+function stopUnreadPolling(){
+  if(unreadPollTimer){
+    clearInterval(unreadPollTimer);
+    unreadPollTimer = null;
+  }
+}
+
+async function recoverSessionAfterAuthRedirect(){
+  const params = new URLSearchParams(window.location.search);
+  if(!params.has("_auth")) return;
+  for(let i = 0; i < 8; i++){
+    const ok = await checkSession();
+    if(ok) break;
+    await new Promise(resolve => setTimeout(resolve, 250));
+  }
+  params.delete("_auth");
+  const cleanQuery = params.toString();
+  const cleanUrl = `${window.location.pathname}${cleanQuery ? `?${cleanQuery}` : ""}${window.location.hash || ""}`;
+  window.history.replaceState(null, "", cleanUrl);
+}
+function hideBusinessAccess(){
+  const section = document.getElementById("businessAccessSection");
+  if(section) section.style.display = "none";
+}
+
+async function updateBusinessAccess(){
+  const section = document.getElementById("businessAccessSection");
+  if(!section){
+    return;
+  }
+  if(!currentSessionUser){
+    hideBusinessAccess();
+    return;
+  }
+  try{
+    const res = await fetch("/business/me", { credentials:"include", cache:"no-store" });
+    if(!res.ok){
+      hideBusinessAccess();
+      return;
+    }
+    const data = await res.json().catch(()=> ({}));
+    const hasBusiness = !!(data && data.has_business);
+    section.style.display = hasBusiness ? "block" : "none";
+  }catch(_e){
+    hideBusinessAccess();
+  }
+}
+
+// Inicialmente comprobar sesión
+
+const legacyBusinessId = new URLSearchParams(window.location.search).get("business");
+if(legacyBusinessId){
+  window.location.replace(`/negocio.html?id=${encodeURIComponent(legacyBusinessId)}`);
+}
+
+initFrontendAssistant();
+updateFeedbackFormUserContext();
+(async () => {
+  await recoverSessionAfterAuthRedirect();
+  await checkSession();
+})();
+window.addEventListener("pageshow", () => {
+  checkSession();
+  refreshUnreadMessagesIndicator(true);
+});
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState === "visible"){
+    checkSession();
+    refreshUnreadMessagesIndicator(true);
+  }
+});
+window.addEventListener("keydown", (ev) => {
+  if(ev.key === "Escape"){
+    closeFeedbackThanksModal(ev);
+  }
+});
+
+
+
+function goLogin(){
+
+  const redirect = encodeURIComponent(window.location.href);
+
+  window.location.href = `/login.html?redirect=${redirect}`;
+
+}
+
+
+
+function goBusinessPanel(){
+  window.location.href = "/administracion/negocios_gestion.html";
+}
+
+function goQrScan(){
+  window.location.href = "/scan_qr.html?app=client";
+}
+
+function goMessages(){
+  window.location.href = "/mensajes.html";
+}
+
+function goRegister(){
+
+  const redirect = encodeURIComponent(window.location.href);
+
+  window.location.href = `/register.html?redirect=${redirect}`;
+
+}
+
+function registerFrontendServiceWorker(){
+  if(!("serviceWorker" in navigator)) return;
+  let refreshing = false;
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if(refreshing) return;
+    refreshing = true;
+    window.location.reload();
+  });
+
+  const attachHotUpdate = (reg) => {
+    if(!reg) return;
+    if(reg.waiting){
+      reg.waiting.postMessage({ type: "SKIP_WAITING" });
+    }
+    reg.addEventListener("updatefound", () => {
+      const newWorker = reg.installing;
+      if(!newWorker) return;
+      newWorker.addEventListener("statechange", () => {
+        if(newWorker.state === "installed" && navigator.serviceWorker.controller){
+          newWorker.postMessage({ type: "SKIP_WAITING" });
+        }
+      });
+    });
+  };
+
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js")
+      .then((reg) => {
+        attachHotUpdate(reg);
+        reg.update().catch(() => {});
+        setInterval(() => {
+          reg.update().catch(() => {});
+        }, 60000);
+      })
+      .catch(() => {});
+  });
+}
+
+function urlBase64ToUint8Array(base64String){
+  const padding = "=".repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const out = new Uint8Array(rawData.length);
+  for(let i = 0; i < rawData.length; i++){
+    out[i] = rawData.charCodeAt(i);
+  }
+  return out;
+}
+
+async function ensurePushSubscriptionForCurrentUser(){
+  if(!currentSessionUser || !currentSessionUser.id) return;
+  if(!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) return;
+  try{
+    const vapidRes = await fetch("/notifications/vapid_public_key", { credentials:"include", cache:"no-store" });
+    const vapidData = await vapidRes.json().catch(()=> ({}));
+    if(!vapidRes.ok || !vapidData || !vapidData.enabled || !vapidData.public_key) return;
+
+    let permission = Notification.permission;
+    if(permission === "default"){
+      try{
+        permission = await Notification.requestPermission();
+      }catch(_e){
+        return;
+      }
+    }
+    if(permission !== "granted") return;
+
+    const reg = await navigator.serviceWorker.ready;
+    if(!reg.pushManager) return;
+    let sub = await reg.pushManager.getSubscription();
+    if(!sub){
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(String(vapidData.public_key)),
+      });
+    }
+    if(!sub) return;
+    await fetch("/notifications/subscribe", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ subscription: sub.toJSON() }),
+    }).catch(()=>{});
+  }catch(_e){}
+}
+
+function isIosDevice(){
+  const ua = window.navigator.userAgent || "";
+  const platform = window.navigator.platform || "";
+  return /iPad|iPhone|iPod/.test(ua) || (platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function isAndroidDevice(){
+  const ua = window.navigator.userAgent || "";
+  return /Android/i.test(ua);
+}
+
+function isStandalonePwa(){
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+function dismissIosPwaHint(){
+  const box = document.getElementById("iosPwaHint");
+  if(box) box.classList.remove("show");
+  try{ localStorage.setItem("ios_pwa_hint_dismissed_v1", "1"); }catch(_e){}
+}
+
+function maybeShowIosPwaHint(){
+  if(!isIosDevice() || isStandalonePwa()) return;
+  let dismissed = false;
+  try{ dismissed = localStorage.getItem("ios_pwa_hint_dismissed_v1") === "1"; }catch(_e){}
+  if(dismissed) return;
+  const box = document.getElementById("iosPwaHint");
+  if(box) box.classList.add("show");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ===== INICIAR ===== */
+
+// --- ÚNICO CAMBIO: Eliminamos la llamada inicial vacía para que no interfiera ---
+
+setInterval(updateBusinessPanel, 60000);
+
+if(isAndroidDevice()){
+  document.body.classList.add("android-device");
+}
+applySearchPerformanceClass();
+window.addEventListener("resize", applySearchPerformanceClass, { passive: true });
+
+
+
+fetchBusinesses();
+
+startCarouselAnimation();
+setupBusinessCardNavigation();
+
+setInterval(fetchBusinesses,6000);
+
+registerFrontendServiceWorker();
+maybeShowIosPwaHint();
+
+
+
+</script>
+
+
+
+</body>
+
+</html>

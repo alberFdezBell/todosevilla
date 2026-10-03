@@ -12,12 +12,9 @@ export const metadata: Metadata = {
     'Directorio local para descubrir comercios, restaurantes, bares, cafeterías y servicios por barrios en Sevilla.',
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
   icons: {
-    icon: [
-      { url: '/todosevilla.ico', sizes: 'any' },
-      { url: '/todosevilla.svg', type: 'image/svg+xml' },
-    ],
+    icon: '/todosevilla.ico',
     shortcut: '/todosevilla.ico',
-    apple: '/todosevilla.svg',
+    apple: '/todosevilla.png',
   },
   openGraph: {
     type: 'website',

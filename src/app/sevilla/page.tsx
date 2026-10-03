@@ -67,38 +67,18 @@ export default async function PortadaPage() {
       {/* Hero Section */}
       <section className="relative bg-gradient-to-b from-[#fff7d1]/80 via-white to-[#f5f7fb] pt-12 pb-20 border-b border-[#ecd37b]/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
-          <div className="ux-chip-title mx-auto">
-            <Sparkles className="w-4 h-4 text-amber-700" />
-            <span>Descubre tu ciudad barrio a barrio</span>
-          </div>
 
-          <h1 className="text-4xl sm:text-6xl font-extrabold text-gray-950 tracking-tight leading-tight max-w-4xl mx-auto">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-950 tracking-tight leading-tight whitespace-nowrap max-w-full mx-auto">
             Las Páginas Amarillas de <span className="underline decoration-[#f3d044] decoration-4 underline-offset-4">Sevilla</span>
           </h1>
 
           <p className="text-lg sm:text-xl text-[#516173] max-w-2xl mx-auto font-medium leading-relaxed">
-            Encuentra bares, cafeterías, tiendas tradicionales, peluquerías y servicios profesionales cerca de ti en Triana, Nervión, Macarena y más.
+            Encuentra bares, cafeterías, tiendas tradicionales, peluquerías y servicios profesionales cerca de ti en Sevilla.
           </p>
 
           {/* Buscador Principal */}
           <div className="pt-2">
             <SearchBar placeholder="Busca cafetería, bar Pepe, peluquería, Triana..." />
-          </div>
-
-          {/* Estadísticas Reales */}
-          <div className="flex items-center justify-center gap-6 pt-4 text-sm font-semibold text-gray-800 flex-wrap">
-            <div className="flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-2xl border border-[#ecd37b] shadow-xs">
-              <Building2 className="w-5 h-5 text-gray-700" />
-              <span>
-                <strong className="text-gray-950 font-extrabold text-base">{totalBarriosCount}</strong> barrios activos
-              </span>
-            </div>
-            <div className="flex items-center gap-2.5 bg-white px-4 py-2.5 rounded-2xl border border-[#ecd37b] shadow-xs">
-              <Store className="w-5 h-5 text-gray-700" />
-              <span>
-                <strong className="text-gray-950 font-extrabold text-base">{totalNegociosCount}</strong> negocios verificados
-              </span>
-            </div>
           </div>
         </div>
       </section>
@@ -107,9 +87,6 @@ export default async function PortadaPage() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <span className="text-xs font-extrabold text-gray-700 uppercase tracking-widest block">
-              Sugerencias locales
-            </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-950">
               Descubre negocios de Sevilla
             </h2>
@@ -192,9 +169,6 @@ export default async function PortadaPage() {
       {/* Barrios Grid Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto mb-10">
-          <span className="text-xs font-extrabold text-gray-700 uppercase tracking-widest block">
-            Estructura por Barrios
-          </span>
           <h2 className="text-3xl font-extrabold text-gray-950 mt-1">
             Explora Sevilla por Barrios
           </h2>
@@ -255,10 +229,6 @@ export default async function PortadaPage() {
               Todo Sevilla nace con el objetivo de ofrecer unas Páginas Amarillas modernas, rápidas y sin distracciones. Queremos dar visibilidad a la abancería del barrio, la freiduría de siempre, la cafetería con el mejor café y todos los profesionales que hacen latir nuestra ciudad.
             </p>
             <div className="pt-2 flex flex-wrap gap-4 text-xs font-bold text-gray-300">
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-[#f3d044]" />
-                <span>Sin intermediarios ni comisiones</span>
-              </div>
               <div className="flex items-center gap-1.5">
                 <Heart className="w-4 h-4 text-sevilla-carmesi fill-sevilla-carmesi" />
                 <span>Apoyo al comercio de cercanía</span>

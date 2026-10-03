@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Heart, ShieldAlert } from 'lucide-react'
+import { Heart } from 'lucide-react'
 
 export function Footer() {
   const currentYear = new Date().getFullYear()
@@ -15,9 +15,9 @@ export function Footer() {
               <Image
                 src="/todosevilla.svg"
                 alt="Logo Todo Sevilla"
-                width={36}
-                height={36}
-                className="object-contain"
+                width={56}
+                height={56}
+                className="object-contain bg-[#f3d24b] rounded-[22%] shrink-0"
               />
               <span className="font-extrabold text-xl tracking-tight text-white">
                 TODO <span className="text-[#f3d044]">SEVILLA</span>
@@ -26,10 +26,6 @@ export function Footer() {
             <p className="text-sm text-gray-400 max-w-md leading-relaxed">
               Directorio local para descubrir comercios, bares, cafeterías y servicios tradicionales en cada barrio de Sevilla. Potenciando el comercio de proximidad.
             </p>
-            <div className="text-xs text-amber-200/90 bg-amber-950/40 border border-amber-800/40 p-2.5 rounded-xl inline-flex items-center gap-2">
-              <ShieldAlert className="w-4 h-4 shrink-0 text-[#f3d044]" />
-              <span>Sin cookies de rastreo ni publicidad molestia. Privacidad 100% garantizada.</span>
-            </div>
           </div>
 
           {/* Col 2: Explorar */}
