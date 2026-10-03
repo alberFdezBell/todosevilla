@@ -1,4 +1,4 @@
-name: CI/CD Pipeline - Todo Sevilla
+name: CI — Todo Sevilla
 
 on:
   push:
@@ -6,167 +6,35 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  REGISTRY: ghcr.io
-
 jobs:
-  # ========================================================
-  # JOB 1: LINT, TEST & BUILD VALIDATION
-  # ========================================================
-  validate:
+  ci:
     name: Lint, Tests & Build
     runs-on: ubuntu-latest
-    env:
-      HAS_TELEGRAM: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}
 
     steps:
-      - name: Checkout Código Fuente
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configurar Node.js
+      - name: Configurar Node.js 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: 'npm'
 
-      - name: Instalar Dependencias
+      - name: Instalar dependencias
         run: npm ci
 
-      - name: Ejecutar Tests Unitarios e Integración
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
         run: npm run test
 
       - name: Generar Prisma Client
         run: npx prisma generate
 
-      - name: Validar Build de Producción (Next.js)
+      - name: Build
         run: npm run build
-
-      - name: Notificar Build Fallido en Telegram
-        if: failure() && env.HAS_TELEGRAM == 'true'
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_CHAT_ID }}
-          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          message: |
-            Todo Sevilla - BUILD FALLIDO
-            Commit: ${{ github.sha }}
-            Autor: ${{ github.actor }}
-            Produccion NO se ha actualizado.
-
-  # ========================================================
-  # JOB 2: DOCKER BUILD, TAG & PUSH TO REGISTRY (GHCR)
-  # ========================================================
-  package-and-deploy:
-    name: Docker Build, Registry & Portainer Deploy
-    needs: validate
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    env:
-      HAS_TELEGRAM: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}
-
-    steps:
-      - name: Checkout Código Fuente
-        uses: actions/checkout@v4
-
-      - name: Extraer versión / SHA corto
-        id: vars
-        run: |
-          echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          # GHCR requiere nombre de imagen en minusculas
-          echo "image_name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
-
-      - name: Autenticar con GitHub Container Registry (GHCR)
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extraer Metadatos para Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ steps.vars.outputs.image_name }}
-          tags: |
-            type=sha,prefix=v0.1.0-
-            type=raw,value=latest
-
-      - name: Construir e Impulsar Imagen Docker
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Notificar Build Correcto en Telegram
-        if: env.HAS_TELEGRAM == 'true'
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_CHAT_ID }}
-          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          message: |
-            Todo Sevilla - BUILD CORRECTO
-            Imagen: ${{ env.REGISTRY }}/${{ steps.vars.outputs.image_name }}:v0.1.0-${{ steps.vars.outputs.sha_short }}
-
-      # ========================================================
-      # STEP: TRIGGER PORTAINER STACK UPDATE VIA WEBHOOK
-      # ========================================================
-      - name: Notificar o Desplegar en Portainer
-        id: portainer
-        run: |
-          if [ -n "${{ secrets.PORTAINER_WEBHOOK_URL }}" ]; then
-            echo "Enviando señal de actualizacion a Portainer..."
-            curl -fsS -X POST "${{ secrets.PORTAINER_WEBHOOK_URL }}" && echo "OK" || echo "Portainer webhook failed (non-fatal)"
-          else
-            echo "PORTAINER_WEBHOOK_URL no configurado. Saltando paso de Portainer."
-          fi
-
-      # ========================================================
-      # STEP: POST-DEPLOY HEALTHCHECK
-      # ========================================================
-      - name: Healthcheck Post-Despliegue
-        id: healthcheck
-        run: |
-          PROD_URL="${{ secrets.PRODUCTION_APP_URL }}"
-          if [ -z "$PROD_URL" ]; then
-            echo "PRODUCTION_APP_URL no configurado. Saltando healthcheck post-deploy."
-            exit 0
-          fi
-
-          echo "Comprobando $PROD_URL/api/health..."
-          for i in {1..6}; do
-            HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$PROD_URL/api/health" 2>/dev/null || echo "000")
-            echo "Intento $i - Status: $HTTP_STATUS"
-            if [ "$HTTP_STATUS" = "200" ]; then
-              echo "Healthcheck OK"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "Healthcheck Fallo post-despliegue"
-          exit 1
-        continue-on-error: true
-
-      - name: Notificar Produccion Actualizada en Telegram
-        if: steps.healthcheck.outcome == 'success' && env.HAS_TELEGRAM == 'true'
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_CHAT_ID }}
-          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          message: |
-            Todo Sevilla - PRODUCCION ACTUALIZADA
-            Version: v0.1.0-${{ steps.vars.outputs.sha_short }}
-
-      - name: Notificar Despliegue Fallido en Telegram
-        if: steps.healthcheck.outcome == 'failure' && env.HAS_TELEGRAM == 'true'
-        uses: appleboy/telegram-action@master
-        with:
-          to: ${{ secrets.TELEGRAM_CHAT_ID }}
-          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          message: |
-            Todo Sevilla - DESPLIEGUE FALLIDO
-            El healthcheck no respondio. Revisar Portainer y hacer rollback si es necesario.
+        env:
+          # Build-time placeholder — la app real usa DATABASE_URL del contenedor
+          DATABASE_URL: postgresql://placeholder:placeholder@localhost:5432/placeholder

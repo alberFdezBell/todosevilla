@@ -1,53 +1,53 @@
 version: '3.8'
 
+# ============================================================
+# Todo Sevilla — Stack de Producción
+# Para usar con Portainer o directamente con:
+#   docker compose up -d
+# ============================================================
+
 services:
-  # Base de Datos PostgreSQL
+
   postgres:
     image: postgres:16-alpine
     container_name: todo-sevilla-db
-    restart: always
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-todosevilla}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-todosevillapass}
-      POSTGRES_DB: ${POSTGRES_DB:-todosevilla_db}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-todosevilla} -d ${POSTGRES_DB:-todosevilla_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    # PostgreSQL NO expuesto al exterior — solo accesible dentro de la red Docker
+    # Para acceso de administración puntual: docker exec -it todo-sevilla-db psql -U <usuario> <bd>
 
-  # Aplicación Todo Sevilla
   app:
-    image: ${DOCKER_REGISTRY:-ghcr.io/alberfdezbell}/${IMAGE_NAME:-todo-sevilla}:${IMAGE_TAG:-latest}
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/alberfdezbell/todosevilla:latest
     container_name: todo-sevilla-app
-    restart: always
+    restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      DATABASE_URL: "postgresql://${POSTGRES_USER:-todosevilla}:${POSTGRES_PASSWORD:-todosevillapass}@postgres:5432/${POSTGRES_DB:-todosevilla_db}?schema=public"
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
       NODE_ENV: production
       PORT: 3000
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
-      JWT_SECRET: ${JWT_SECRET:-super-secreto-cambiar-en-produccion-32-chars-min}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-AdminSevilla2026!ChangeMe}
-      RESTRICT_ADMIN_IP: ${RESTRICT_ADMIN_IP:-false}
-      ALLOWED_ADMIN_IPS: ${ALLOWED_ADMIN_IPS:-127.0.0.1,::1,192.168.1.0/24,10.0.0.0/8}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     ports:
       - "3000:3000"
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
-      interval: 15s
-      timeout: 5s
+      interval: 30s
+      timeout: 10s
       retries: 3
-      start_period: 20s
+      start_period: 30s
 
 volumes:
   postgres_data:
