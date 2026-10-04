@@ -19,44 +19,14 @@ export function Header() {
             priority
           />
           <div className="flex flex-col">
-            <span className="font-extrabold text-xl tracking-tight text-gray-950 leading-none">
+            <span className="-ml-1 font-extrabold text-xl tracking-tight text-gray-950 leading-none">
               TODO <span className="text-gray-900">SEVILLA</span>
             </span>
             <span className="text-[10px] uppercase font-extrabold tracking-widest text-gray-800 opacity-90">
-              Directorio Local de Barrios
+              Páginas amarillas
             </span>
           </div>
         </Link>
-
-        {/* Navigation Links */}
-        <nav className="hidden md:flex items-center space-x-2 text-sm font-bold text-gray-900">
-          <Link
-            href="/sevilla"
-            className="hover:bg-black/10 px-3 py-1.5 rounded-lg transition-colors"
-          >
-            Inicio
-          </Link>
-          <Link
-            href="/sevilla/barrios"
-            className="flex items-center gap-1.5 hover:bg-black/10 px-3 py-1.5 rounded-lg transition-colors"
-          >
-            <Building2 className="w-4 h-4 text-gray-800" />
-            Barrios
-          </Link>
-          <Link
-            href="/sevilla/buscar"
-            className="flex items-center gap-1.5 hover:bg-black/10 px-3 py-1.5 rounded-lg transition-colors"
-          >
-            <Search className="w-4 h-4 text-gray-800" />
-            Buscador
-          </Link>
-          <Link
-            href="/contacto"
-            className="hover:bg-black/10 px-3 py-1.5 rounded-lg transition-colors"
-          >
-            Contacto
-          </Link>
-        </nav>
 
         {/* Actions / Admin Link */}
         <div className="flex items-center gap-2">

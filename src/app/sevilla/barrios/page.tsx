@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { MapPin, ArrowRight, Building2 } from 'lucide-react'
 import type { Metadata } from 'next'
+import SevillaBarriosMap from '@/components/SevillaBarriosMap';
 
 export const metadata: Metadata = {
   title: 'Barrios de Sevilla — Directorio Completo',
@@ -41,6 +42,14 @@ export default async function BarriosListPage() {
           Selecciona un barrio para ver el listado de comercios, bares, cafeterías y profesionales disponibles.
         </p>
       </div>
+
+      {/* Mapa de Barrios */}
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <SevillaBarriosMap
+            height={680}
+            className="w-full rounded-2xl border border-[#d7e0ea] shadow-sm overflow-hidden"
+          />
+        </section>
 
       {/* Barrios Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

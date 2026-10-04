@@ -167,54 +167,7 @@ export default async function PortadaPage() {
         )}
       </section>
 
-      {/* Barrios Grid Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-10">
-          <h2 className="text-3xl font-extrabold text-gray-950 mt-1">
-            Explora Sevilla por Barrios
-          </h2>
-          <p className="text-sm text-[#516173] mt-2">
-            Cada barrio tiene su propia alma, tradición y comercios de confianza.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {barrios.map((b) => (
-            <Link
-              key={b.id}
-              href={`/sevilla/${b.slug}`}
-              className="bg-white rounded-2xl border border-[#d7e0ea] p-6 shadow-xs hover:shadow-md hover:border-[#f3d044] transition-all group flex flex-col justify-between"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="bg-[#fff7d1] text-gray-900 border border-[#ecd37b] p-2 rounded-xl group-hover:bg-[#f3d044] transition-colors">
-                      <MapPin className="w-5 h-5" />
-                    </div>
-                    <h3 className="font-extrabold text-xl text-gray-950 group-hover:text-amber-800 transition-colors">
-                      {b.nombre}
-                    </h3>
-                  </div>
-                  <span className="text-xs font-bold text-gray-800 bg-[#fff7d1] border border-[#ecd37b] px-2.5 py-1 rounded-full">
-                    {b._count.negocios} negocios
-                  </span>
-                </div>
-
-                {b.descripcion && (
-                  <p className="text-xs text-[#516173] line-clamp-2 leading-relaxed">
-                    {b.descripcion}
-                  </p>
-                )}
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between text-xs font-extrabold text-gray-900 group-hover:underline">
-                <span>Explorar negocios en {b.nombre}</span>
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+      
 
       {/* Mapa de Barrios */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

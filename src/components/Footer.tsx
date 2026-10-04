@@ -36,7 +36,7 @@ export function Footer() {
             <ul className="space-y-2 text-sm font-medium">
               <li>
                 <Link href="/sevilla" className="hover:text-[#f3d044] transition-colors">
-                  Portada
+                  Inicio
                 </Link>
               </li>
               <li>
@@ -76,11 +76,6 @@ export function Footer() {
               <li>
                 <Link href="/terminos-y-condiciones" className="hover:text-[#f3d044] transition-colors">
                   Términos y Condiciones
-                </Link>
-              </li>
-              <li>
-                <Link href="/admin" className="text-xs text-gray-400 hover:text-white transition-colors">
-                  Acceso Privado / Admin
                 </Link>
               </li>
             </ul>

@@ -52,11 +52,11 @@ const MASK_STYLE: Leaflet.PathOptions = {
 
 // Estilo base de los barrios
 const BASE_STYLE: Leaflet.PathOptions = {
-  color: "#ffffff",
+  color: "#f3d044",
   weight: 1.8,
   opacity: 0.9,
-  fillColor: "#ffffff",
-  fillOpacity: 0.15,
+  fillColor: "#ff0000",
+  fillOpacity: 0.25,
 };
 
 const HOVER_STYLE: Leaflet.PathOptions = {
