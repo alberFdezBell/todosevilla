@@ -325,7 +325,10 @@ export default function SevillaBarriosMap({
   }, [geojsonUrl, baseLayer, router]);
 
   return (
-    <div className={className} style={{ position: "relative", height, width: "100%" }}>
+    // `zIndex: 0` crea un stacking context aislado: los z-index internos de
+    // Leaflet (panes 400-500, info panel 1000) quedan contenidos en este
+    // contenedor y no pueden pintar por encima del header sticky (z-40).
+    <div className={className} style={{ position: "relative", zIndex: 0, height, width: "100%" }}>
       <div ref={containerRef} style={{ height: "100%", width: "100%", cursor: "pointer", backgroundColor: "#0f172a" }} />
 
       {/* Info Floating Panel */}

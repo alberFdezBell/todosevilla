@@ -90,54 +90,6 @@ export default async function AdminDashboardPage() {
           <h2 className="text-xl font-bold text-gray-900 border-b border-gray-100 pb-4">
             Acciones Rápidas
           </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Link
-              href="/admin/barrios?action=new"
-              className="p-5 rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/50 hover:bg-amber-100/60 hover:border-sevilla-carmesi transition-all flex items-center gap-4 group"
-            >
-              <div className="bg-sevilla-carmesi text-white p-2.5 rounded-xl group-hover:scale-110 transition-transform">
-                <Plus className="w-5 h-5" />
-              </div>
-              <div>
-                <strong className="block text-sm font-bold text-gray-900 group-hover:text-sevilla-carmesi">
-                  + Crear Barrio
-                </strong>
-                <span className="text-xs text-gray-500">Añadir nuevo barrio a la estructura</span>
-              </div>
-            </Link>
-
-            <Link
-              href="/admin/negocios?action=new"
-              className="p-5 rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/50 hover:bg-amber-100/60 hover:border-sevilla-carmesi transition-all flex items-center gap-4 group"
-            >
-              <div className="bg-sevilla-albero-dark text-white p-2.5 rounded-xl group-hover:scale-110 transition-transform">
-                <Plus className="w-5 h-5" />
-              </div>
-              <div>
-                <strong className="block text-sm font-bold text-gray-900 group-hover:text-sevilla-carmesi">
-                  + Crear Negocio
-                </strong>
-                <span className="text-xs text-gray-500">Registrar un nuevo comercio</span>
-              </div>
-            </Link>
-
-            <Link
-              href="/admin/categorias?action=new"
-              className="p-5 rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50/50 hover:bg-amber-100/60 hover:border-sevilla-carmesi transition-all flex items-center gap-4 group"
-            >
-              <div className="bg-gray-800 text-white p-2.5 rounded-xl group-hover:scale-110 transition-transform">
-                <Plus className="w-5 h-5" />
-              </div>
-              <div>
-                <strong className="block text-sm font-bold text-gray-900 group-hover:text-sevilla-carmesi">
-                  + Crear Categoría
-                </strong>
-                <span className="text-xs text-gray-500">Categorizar negocios</span>
-              </div>
-            </Link>
-          </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
             <Link
               href="/admin/barrios"
