@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { AdminLayout } from '@/components/AdminLayout'
-import { Tags, Plus, Edit2, Trash2, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
+import { Tags, Plus, Edit2, Trash2, CheckCircle, AlertCircle, Loader2, XCircle, Search } from 'lucide-react'
 import { slugify } from '@/lib/utils'
 
 interface CategoriaItem {
@@ -17,6 +17,9 @@ interface CategoriaItem {
 
 export default function AdminCategoriasPage() {
   const [categorias, setCategorias] = useState<CategoriaItem[]>([])
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -54,6 +57,66 @@ export default function AdminCategoriasPage() {
   useEffect(() => {
     fetchCategorias()
   }, [])
+
+  const filteredCategorias = categorias.filter((c) => {
+    const q = searchQuery.toLowerCase()
+    return (
+      c.nombre.toLowerCase().includes(q) ||
+      c.slug.toLowerCase().includes(q) ||
+      (c.descripcion ?? '').toLowerCase().includes(q)
+    )
+  })
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === filteredCategorias.length) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(filteredCategorias.map((c) => c.id))
+    }
+  }
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    )
+  }
+
+  const handleBulkAction = async (action: 'activate' | 'deactivate' | 'delete') => {
+    if (selectedIds.length === 0) return
+
+    if (action === 'delete') {
+      if (!confirm(`¿Estás seguro de eliminar las ${selectedIds.length} categorías seleccionadas?`)) {
+        return
+      }
+    }
+
+    setIsBulkProcessing(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      const res = await fetch('/api/admin/categorias/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ids: selectedIds }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Error al ejecutar la acción grupal')
+        return
+      }
+
+      setSuccess(data.message || 'Acción grupal completada')
+      setSelectedIds([])
+      fetchCategorias()
+    } catch {
+      setError('Error de comunicación con el servidor')
+    } finally {
+      setIsBulkProcessing(false)
+    }
+  }
 
   const handleOpenCreate = () => {
     setEditingCategoria(null)
@@ -201,6 +264,73 @@ export default function AdminCategoriasPage() {
           </div>
         )}
 
+        {/* Bulk Action Bar */}
+        {selectedIds.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3 text-xs font-bold text-amber-900">
+              <span className="bg-sevilla-carmesi text-white px-2.5 py-1 rounded-full font-extrabold text-[11px]">
+                {selectedIds.length} seleccionada(s)
+              </span>
+              <button
+                type="button"
+                onClick={handleSelectAll}
+                className="text-blue-700 hover:underline cursor-pointer"
+              >
+                {selectedIds.length === filteredCategorias.length ? 'Deseleccionar todo' : 'Seleccionar todo'}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                disabled={isBulkProcessing}
+                onClick={() => handleBulkAction('activate')}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow-2xs transition-colors disabled:opacity-50"
+              >
+                <CheckCircle className="w-3.5 h-3.5" />
+                <span>Activar seleccionadas</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={isBulkProcessing}
+                onClick={() => handleBulkAction('deactivate')}
+                className="bg-gray-700 hover:bg-gray-800 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow-2xs transition-colors disabled:opacity-50"
+              >
+                <XCircle className="w-3.5 h-3.5" />
+                <span>Desactivar seleccionadas</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={isBulkProcessing}
+                onClick={() => handleBulkAction('delete')}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow-2xs transition-colors disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Borrar seleccionadas</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar por nombre, slug o descripción..."
+            className="w-full sm:max-w-sm pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sevilla-carmesi focus:bg-white"
+          />
+          {searchQuery && (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-gray-400 font-medium">
+              {filteredCategorias.length} resultado(s)
+            </span>
+          )}
+        </div>
+
         {/* Categorías Table */}
         <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
           {isLoading ? (
@@ -212,11 +342,24 @@ export default function AdminCategoriasPage() {
             <div className="p-12 text-center text-gray-500">
               No hay categorías registradas.
             </div>
+          ) : filteredCategorias.length === 0 ? (
+            <div className="p-12 text-center text-gray-500 text-sm">
+              No hay categorías que coincidan con &quot;{searchQuery}&quot;.
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200 text-[11px] uppercase font-bold text-gray-500">
+                    <th className="p-4 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={filteredCategorias.length > 0 && selectedIds.length === filteredCategorias.length}
+                        onChange={handleSelectAll}
+                        className="w-4 h-4 text-sevilla-carmesi rounded focus:ring-sevilla-carmesi"
+                        title="Seleccionar todo"
+                      />
+                    </th>
                     <th className="p-4">Categoría</th>
                     <th className="p-4">Slug</th>
                     <th className="p-4 text-center">Negocios Vinculados</th>
@@ -225,8 +368,21 @@ export default function AdminCategoriasPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-xs text-gray-800 font-medium">
-                  {categorias.map((c) => (
-                    <tr key={c.id} className="hover:bg-amber-50/40 transition-colors">
+                  {filteredCategorias.map((c) => (
+                    <tr
+                      key={c.id}
+                      className={`hover:bg-amber-50/40 transition-colors ${
+                        selectedIds.includes(c.id) ? 'bg-amber-50/70' : ''
+                      }`}
+                    >
+                      <td className="p-4 w-10 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(c.id)}
+                          onChange={() => handleToggleSelect(c.id)}
+                          className="w-4 h-4 text-sevilla-carmesi rounded focus:ring-sevilla-carmesi"
+                        />
+                      </td>
                       <td className="p-4 font-bold text-gray-900 text-sm">
                         {c.nombre}
                         {c.descripcion && (

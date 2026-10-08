@@ -71,10 +71,6 @@ export default async function BarrioDetailPage({ params }: BarrioPageProps) {
         )}
         <div className="p-8 md:w-2/3 flex flex-col justify-between space-y-4">
           <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-sevilla-carmesi bg-amber-50 px-3 py-1 rounded-full border border-amber-200 mb-3">
-              <MapPin className="w-3.5 h-3.5" />
-              Barrio de Sevilla
-            </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
               {barrio.nombre}
             </h1>
@@ -85,10 +81,8 @@ export default async function BarrioDetailPage({ params }: BarrioPageProps) {
             )}
           </div>
 
-          <div className="pt-4 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-            <span className="font-semibold text-gray-900">
-              {barrio.negocios.length} negocio(s) activo(s) en este barrio
-            </span>
+          <div className="pt-4 border-t border-gray-100 text-xs text-gray-500">
+            {barrio.negocios.length} negocio{barrio.negocios.length === 1 ? '' : 's'} activo{barrio.negocios.length === 1 ? '' : 's'} en este barrio
           </div>
         </div>
       </div>

@@ -69,7 +69,7 @@ export default async function PortadaPage() {
       <section className="relative bg-gradient-to-b from-[#fff7d1]/80 via-white to-[#f5f7fb] pt-12 pb-20 border-b border-[#ecd37b]/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-8">
 
-          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-950 tracking-tight leading-tight whitespace-nowrap max-w-full mx-auto">
+          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-gray-950 tracking-tight leading-tight max-w-full mx-auto">
             Las Páginas Amarillas de <span className="underline decoration-[#f3d044] decoration-4 underline-offset-4">Sevilla</span>
           </h1>
 
@@ -92,13 +92,6 @@ export default async function PortadaPage() {
               Descubre negocios de Sevilla
             </h2>
           </div>
-          <Link
-            href="/sevilla/barrios"
-            className="text-sm font-extrabold text-gray-900 hover:text-amber-700 flex items-center gap-1 group"
-          >
-            Ver todos los barrios
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
         </div>
 
         {discoveryNegocios.length === 0 ? (
@@ -120,17 +113,18 @@ export default async function PortadaPage() {
                       alt={negocio.nombre}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <div className="absolute top-3 left-3 bg-[#fff7d1] border border-[#ecd37b] px-2.5 py-1 rounded-lg text-xs font-bold text-gray-900 shadow-xs flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-gray-700" />
+                    <div className="absolute top-3 left-3 flex items-center gap-1 text-xs font-bold text-white drop-shadow">
+                      <MapPin className="w-3.5 h-3.5" />
                       {negocio.barrio.nombre}
                     </div>
                   </div>
                 ) : (
-                  <div className="h-28 bg-[#fff7d1]/60 p-4 flex items-center justify-between border-b border-[#ecd37b]/40">
-                    <div className="bg-white p-3 rounded-xl shadow-xs border border-[#ecd37b]">
-                      <Store className="w-6 h-6 text-gray-800" />
+                  <div className="h-28 bg-gray-50 p-4 flex items-center justify-between border-b border-gray-100">
+                    <div className="p-3 rounded-xl">
+                      <Store className="w-6 h-6 text-gray-400" />
                     </div>
-                    <span className="text-xs font-bold text-gray-900 bg-white px-2.5 py-1 rounded-lg border border-[#ecd37b] shadow-xs">
+                    <span className="text-xs font-semibold text-gray-500 flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5" />
                       {negocio.barrio.nombre}
                     </span>
                   </div>
@@ -149,11 +143,11 @@ export default async function PortadaPage() {
                   </div>
 
                   {negocio.categorias.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-2 border-t border-gray-100">
+                    <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
                       {negocio.categorias.map((c) => (
                         <span
                           key={c.categoria.slug}
-                          className="text-[11px] font-bold text-gray-800 bg-[#fff7d1] px-2 py-0.5 rounded-md border border-[#ecd37b]"
+                          className="text-[11px] text-gray-400 font-medium"
                         >
                           {c.categoria.nombre}
                         </span>
@@ -171,18 +165,19 @@ export default async function PortadaPage() {
 
       {/* Mapa de Barrios */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-extrabold text-gray-950 mt-1">
+        <div className="mb-6">
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-950 mt-1">
             Mapa de Barrios de Sevilla
           </h2>
-          <p className="text-sm text-[#516173] mt-2">
-            Pasa el ratón por cada barrio para descubrir su nombre y su situación en la ciudad.
-          </p>
+          <p className="text-sm text-gray-500 mt-1">Haz clic en un barrio para ver sus negocios.</p>
         </div>
-        <SevillaBarriosMap
-          height={680}
-          className="w-full rounded-2xl border border-[#d7e0ea] shadow-sm overflow-hidden"
-        />
+        {/* Wrapper con altura responsive: 320px móvil, 480px tablet, 680px desktop */}
+        <div className="h-[320px] sm:h-[480px] lg:h-[680px] w-full rounded-2xl border border-[#d7e0ea] shadow-sm overflow-hidden touch-pan-y">
+          <SevillaBarriosMap
+            height="100%"
+            className="w-full h-full"
+          />
+        </div>
       </section>
 
       {/* About Todo Sevilla Info Box */}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { AdminLayout } from '@/components/AdminLayout'
-import { Store, Plus, Edit2, Trash2, CheckCircle, AlertCircle, Loader2, MapPin } from 'lucide-react'
+import { Store, Plus, Edit2, Trash2, CheckCircle, AlertCircle, Loader2, MapPin, XCircle, Search } from 'lucide-react'
 import { slugify } from '@/lib/utils'
 
 interface BarrioSimple {
@@ -36,6 +36,9 @@ interface NegocioItem {
 
 export default function AdminNegociosPage() {
   const [negocios, setNegocios] = useState<NegocioItem[]>([])
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [isBulkProcessing, setIsBulkProcessing] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [barrios, setBarrios] = useState<BarrioSimple[]>([])
   const [categorias, setCategorias] = useState<CategoriaSimple[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -89,6 +92,68 @@ export default function AdminNegociosPage() {
   useEffect(() => {
     fetchData()
   }, [])
+
+  const filteredNegocios = negocios.filter((n) => {
+    const q = searchQuery.toLowerCase()
+    return (
+      n.nombre.toLowerCase().includes(q) ||
+      n.slug.toLowerCase().includes(q) ||
+      n.barrio.nombre.toLowerCase().includes(q) ||
+      (n.direccion ?? '').toLowerCase().includes(q) ||
+      (n.telefono ?? '').toLowerCase().includes(q)
+    )
+  })
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === filteredNegocios.length) {
+      setSelectedIds([])
+    } else {
+      setSelectedIds(filteredNegocios.map((n) => n.id))
+    }
+  }
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    )
+  }
+
+  const handleBulkAction = async (action: 'activate' | 'deactivate' | 'delete') => {
+    if (selectedIds.length === 0) return
+
+    if (action === 'delete') {
+      if (!confirm(`¿Estás seguro de eliminar los ${selectedIds.length} negocios seleccionados?`)) {
+        return
+      }
+    }
+
+    setIsBulkProcessing(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      const res = await fetch('/api/admin/negocios/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ids: selectedIds }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        setError(data.error || 'Error al ejecutar la acción grupal')
+        return
+      }
+
+      setSuccess(data.message || 'Acción grupal completada')
+      setSelectedIds([])
+      fetchData()
+    } catch {
+      setError('Error de comunicación con el servidor')
+    } finally {
+      setIsBulkProcessing(false)
+    }
+  }
 
   const handleOpenCreate = () => {
     setEditingNegocio(null)
@@ -284,6 +349,73 @@ export default function AdminNegociosPage() {
           </div>
         )}
 
+        {/* Bulk Action Bar */}
+        {selectedIds.length > 0 && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3 text-xs font-bold text-amber-900">
+              <span className="bg-sevilla-carmesi text-white px-2.5 py-1 rounded-full font-extrabold text-[11px]">
+                {selectedIds.length} seleccionado(s)
+              </span>
+              <button
+                type="button"
+                onClick={handleSelectAll}
+                className="text-blue-700 hover:underline cursor-pointer"
+              >
+                {selectedIds.length === filteredNegocios.length ? 'Deseleccionar todo' : 'Seleccionar todo'}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                disabled={isBulkProcessing}
+                onClick={() => handleBulkAction('activate')}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow-2xs transition-colors disabled:opacity-50"
+              >
+                <CheckCircle className="w-3.5 h-3.5" />
+                <span>Activar seleccionados</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={isBulkProcessing}
+                onClick={() => handleBulkAction('deactivate')}
+                className="bg-gray-700 hover:bg-gray-800 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow-2xs transition-colors disabled:opacity-50"
+              >
+                <XCircle className="w-3.5 h-3.5" />
+                <span>Desactivar seleccionados</span>
+              </button>
+
+              <button
+                type="button"
+                disabled={isBulkProcessing}
+                onClick={() => handleBulkAction('delete')}
+                className="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow-2xs transition-colors disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Borrar seleccionados</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar por nombre, barrio, dirección o teléfono..."
+            className="w-full sm:max-w-sm pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sevilla-carmesi focus:bg-white"
+          />
+          {searchQuery && (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-gray-400 font-medium">
+              {filteredNegocios.length} resultado(s)
+            </span>
+          )}
+        </div>
+
         {/* Negocios Table */}
         <div className="bg-white rounded-3xl border border-gray-200 shadow-sm overflow-hidden">
           {isLoading ? (
@@ -295,11 +427,24 @@ export default function AdminNegociosPage() {
             <div className="p-12 text-center text-gray-500">
               No hay negocios registrados. Haz clic en &quot;+ Crear Nuevo Negocio&quot; para añadir uno.
             </div>
+          ) : filteredNegocios.length === 0 ? (
+            <div className="p-12 text-center text-gray-500 text-sm">
+              No hay negocios que coincidan con &quot;{searchQuery}&quot;.
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200 text-[11px] uppercase font-bold text-gray-500">
+                    <th className="p-4 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={filteredNegocios.length > 0 && selectedIds.length === filteredNegocios.length}
+                        onChange={handleSelectAll}
+                        className="w-4 h-4 text-sevilla-carmesi rounded focus:ring-sevilla-carmesi"
+                        title="Seleccionar todo"
+                      />
+                    </th>
                     <th className="p-4">Negocio</th>
                     <th className="p-4">Barrio</th>
                     <th className="p-4">Contacto</th>
@@ -308,8 +453,21 @@ export default function AdminNegociosPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-xs text-gray-800 font-medium">
-                  {negocios.map((n) => (
-                    <tr key={n.id} className="hover:bg-amber-50/40 transition-colors">
+                  {filteredNegocios.map((n) => (
+                    <tr
+                      key={n.id}
+                      className={`hover:bg-amber-50/40 transition-colors ${
+                        selectedIds.includes(n.id) ? 'bg-amber-50/70' : ''
+                      }`}
+                    >
+                      <td className="p-4 w-10 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.includes(n.id)}
+                          onChange={() => handleToggleSelect(n.id)}
+                          className="w-4 h-4 text-sevilla-carmesi rounded focus:ring-sevilla-carmesi"
+                        />
+                      </td>
                       <td className="p-4">
                         <div className="font-bold text-gray-900 text-sm">{n.nombre}</div>
                         <div className="text-[11px] text-gray-400 font-mono">/sevilla/{n.barrio.slug}/{n.slug}</div>

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import { Search, MapPin, Store, Loader2, ArrowRight } from 'lucide-react'
+import { useState, useEffect, useRef, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Search, MapPin, Store, Loader2, ArrowRight, X } from 'lucide-react'
 import Link from 'next/link'
 
 interface SearchResult {
@@ -17,14 +17,25 @@ interface SearchResult {
   }>
 }
 
-export function SearchBar({ placeholder = 'Buscar cafetería, peluquería, Triana, Nervión...' }: { placeholder?: string }) {
-  const [query, setQuery] = useState('')
+function SearchBarForm({ placeholder }: { placeholder?: string }) {
+  const searchParams = useSearchParams()
+  const initialQuery = searchParams?.get('q') || ''
+  const [query, setQuery] = useState(initialQuery)
   const [results, setResults] = useState<SearchResult | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
   const router = useRouter()
   const containerRef = useRef<HTMLDivElement>(null)
 
+  // Sincronizar estado del input con cambios en URL
+  useEffect(() => {
+    const q = searchParams?.get('q')
+    if (q !== null && q !== undefined) {
+      setQuery(q)
+    }
+  }, [searchParams])
+
+  // Cerrar desplegable si se hace clic fuera
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -35,10 +46,12 @@ export function SearchBar({ placeholder = 'Buscar cafetería, peluquería, Trian
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Búsqueda en vivo (autocomplete) mientras escribe
   useEffect(() => {
     if (query.trim().length < 2) {
       setResults(null)
       setIsLoading(false)
+      setIsOpen(false)
       return
     }
 
@@ -56,7 +69,7 @@ export function SearchBar({ placeholder = 'Buscar cafetería, peluquería, Trian
       } finally {
         setIsLoading(false)
       }
-    }, 250)
+    }, 150)
 
     return () => clearTimeout(timer)
   }, [query])
@@ -67,6 +80,12 @@ export function SearchBar({ placeholder = 'Buscar cafetería, peluquería, Trian
       setIsOpen(false)
       router.push(`/sevilla/buscar?q=${encodeURIComponent(query.trim())}`)
     }
+  }
+
+  const handleClear = () => {
+    setQuery('')
+    setResults(null)
+    setIsOpen(false)
   }
 
   return (
@@ -83,13 +102,24 @@ export function SearchBar({ placeholder = 'Buscar cafetería, peluquería, Trian
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => query.trim().length >= 2 && setIsOpen(true)}
+          onFocus={() => query.trim().length >= 2 && results && setIsOpen(true)}
+          onKeyDown={(e) => e.key === 'Escape' && setIsOpen(false)}
           placeholder={placeholder}
-          className="w-full py-3.5 pr-4 text-gray-900 placeholder-gray-400 font-medium text-base sm:text-lg focus:outline-none bg-transparent"
+          className="w-full py-3.5 pr-2 text-gray-900 placeholder-gray-400 font-medium text-base sm:text-lg focus:outline-none bg-transparent"
         />
+        {query && (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="p-1.5 mr-1 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+            title="Borrar búsqueda"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
         <button
           type="submit"
-          className="mr-1.5 bg-[#f3d044] hover:bg-[#e5c234] text-gray-950 font-extrabold px-5 py-2.5 rounded-xl text-sm sm:text-base transition-colors flex items-center gap-1.5 shrink-0 shadow-xs"
+          className="mr-1.5 bg-[#f3d044] hover:bg-[#e5c234] text-gray-950 font-extrabold px-5 py-2.5 rounded-xl text-sm sm:text-base transition-colors flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
         >
           <span>Buscar</span>
           <ArrowRight className="w-4 h-4 hidden sm:inline" />
@@ -100,8 +130,8 @@ export function SearchBar({ placeholder = 'Buscar cafetería, peluquería, Trian
       {isOpen && results && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden z-50 max-h-96 overflow-y-auto">
           {results.barrios.length === 0 && results.negocios.length === 0 ? (
-            <div className="p-4 text-center text-sm text-gray-500">
-              No se encontraron resultados para &quot;{query}&quot;
+            <div className="p-4 text-center text-sm text-gray-500 font-medium">
+              No se encontraron sugerencias para &quot;{query}&quot;
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
@@ -110,7 +140,7 @@ export function SearchBar({ placeholder = 'Buscar cafetería, peluquería, Trian
                 <div className="p-3 bg-[#fff7d1]/50">
                   <div className="text-[11px] font-extrabold uppercase tracking-wider text-gray-800 mb-2 flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5 text-gray-700" />
-                    Barrios encontrados ({results.barrios.length})
+                    Barrios ({results.barrios.length})
                   </div>
                   <div className="space-y-1">
                     {results.barrios.map((b) => (
@@ -169,9 +199,10 @@ export function SearchBar({ placeholder = 'Buscar cafetería, peluquería, Trian
                 <Link
                   href={`/sevilla/buscar?q=${encodeURIComponent(query.trim())}`}
                   onClick={() => setIsOpen(false)}
-                  className="text-xs font-bold text-gray-900 hover:text-sevilla-carmesi"
+                  className="text-xs font-bold text-gray-900 hover:text-sevilla-carmesi flex items-center justify-center gap-1"
                 >
-                  Ver todos los resultados de &quot;{query}&quot; →
+                  <span>Ver todos los resultados de &quot;{query}&quot;</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
             </div>
@@ -179,5 +210,15 @@ export function SearchBar({ placeholder = 'Buscar cafetería, peluquería, Trian
         </div>
       )}
     </div>
+  )
+}
+
+export function SearchBar(props: { placeholder?: string }) {
+  return (
+    <Suspense fallback={
+      <div className="w-full max-w-2xl mx-auto h-14 bg-white rounded-2xl border-2 border-[#f3d044] animate-pulse" />
+    }>
+      <SearchBarForm {...props} />
+    </Suspense>
   )
 }

@@ -124,21 +124,18 @@ export default async function BusinessDetailPage({ params }: BusinessPageProps) 
         <div className="p-6 sm:p-10 space-y-8">
           {/* Header Title & Categories */}
           <div className="space-y-3 border-b border-gray-100 pb-6">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
               <Link
                 href={`/sevilla/${barrio.slug}`}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-sevilla-carmesi bg-amber-50 px-3 py-1 rounded-full border border-amber-200 hover:bg-amber-100 transition-colors"
+                className="flex items-center gap-1 hover:text-sevilla-carmesi transition-colors"
               >
                 <MapPin className="w-3.5 h-3.5" />
-                Barrio {barrio.nombre}
+                {barrio.nombre}
               </Link>
 
               {negocio.categorias.map((c) => (
-                <span
-                  key={c.categoria.slug}
-                  className="text-xs font-semibold text-gray-700 bg-gray-100 px-3 py-1 rounded-full"
-                >
-                  {c.categoria.nombre}
+                <span key={c.categoria.slug} className="text-gray-400">
+                  · {c.categoria.nombre}
                 </span>
               ))}
             </div>
@@ -241,11 +238,9 @@ export default async function BusinessDetailPage({ params }: BusinessPageProps) 
             </div>
           </div>
 
-          {/* Verification Badge & Timestamps */}
+          {/* Verification & Timestamps */}
           <div className="pt-6 border-t border-gray-100 flex items-center justify-between text-xs text-gray-400">
-            <span className="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200 font-semibold">
-              ✓ Ficha verificada en Todo Sevilla
-            </span>
+            <span>✓ Ficha verificada</span>
             <span className="hidden sm:inline">
               Actualizado el {new Date(negocio.updated_at).toLocaleDateString('es-ES')}
             </span>

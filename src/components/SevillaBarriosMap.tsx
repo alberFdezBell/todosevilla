@@ -120,9 +120,14 @@ export default function SevillaBarriosMap({
 }: SevillaBarriosMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
-  const [info, setInfo] = useState<Info | null>(null);
   const [status, setStatus] = useState<"loading" | "ready" | "empty" | "error">("loading");
   const [errorMsg, setErrorMsg] = useState<string>("");
+
+  useEffect(() => {
+    (window as unknown as { __navigateToBarrio?: (slug: string) => void }).__navigateToBarrio = (slug: string) => {
+      if (slug) router.push(`/sevilla/${slug}`);
+    };
+  }, [router]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -255,7 +260,6 @@ export default function SevillaBarriosMap({
           return;
         }
 
-        const infos = new Map<Leaflet.Path, Info>();
         let hovered: Leaflet.Path | null = null;
 
         const geo: Leaflet.GeoJSON<BarrioProps> = L.geoJSON<BarrioProps>(data, {
@@ -267,8 +271,6 @@ export default function SevillaBarriosMap({
             const nombre = feature.properties?.nombre ?? "Barrio";
             const slug = feature.properties?.slug ?? "";
             const negocios = feature.properties?.negocios ?? 0;
-            const entry: Info = { name: nombre, slug, negocios };
-            infos.set(path, entry);
 
             const labelText = `${nombre} (${negocios} ${negocios === 1 ? 'negocio' : 'negocios'})`;
             path.bindTooltip(labelText, {
@@ -277,23 +279,50 @@ export default function SevillaBarriosMap({
               className: "custom-barrio-tooltip",
             });
 
+            const popupContent = `
+              <div style="padding: 10px 12px 6px 12px; text-align: center; font-family: system-ui, -apple-system, sans-serif; min-width: 210px;">
+                <h3 style="margin: 0 0 4px 0; font-size: 1.2rem; font-weight: 800; color: #0f172a; line-height: 1.25;">
+                  ${nombre}
+                </h3>
+                <p style="margin: 0 0 14px 0; font-size: 0.875rem; font-weight: 600; color: #64748b;">
+                  ${negocios} ${negocios === 1 ? 'negocio registrado' : 'negocios registrados'}
+                </p>
+                <a href="/sevilla/${slug}" onclick="event.preventDefault(); window.__navigateToBarrio && window.__navigateToBarrio('${slug}');" class="barrio-ver-mas-btn" style="color: #000000 !important;">
+                  Ver más
+                </a>
+              </div>
+            `;
+
+            path.bindPopup(popupContent, {
+              className: "custom-barrio-popup",
+              closeButton: true,
+              maxWidth: 280,
+              minWidth: 210,
+              autoPan: true,
+              autoPanPadding: [30, 30],
+            });
+
             path.on({
               mouseover: () => {
                 if (hovered && hovered !== path) geo.resetStyle(hovered);
                 hovered = path;
                 path.setStyle(HOVER_STYLE);
                 path.bringToFront();
-                setInfo(entry);
+                if (path.isPopupOpen()) {
+                  path.closeTooltip();
+                }
+              },
+              mousemove: () => {
+                if (path.isPopupOpen()) {
+                  path.closeTooltip();
+                }
               },
               mouseout: () => {
                 geo.resetStyle(path);
                 if (hovered === path) hovered = null;
-                setInfo(null);
               },
-              click: () => {
-                if (slug) {
-                  router.push(`/sevilla/${slug}`);
-                }
+              popupopen: () => {
+                path.closeTooltip();
               },
             });
           },
@@ -328,45 +357,105 @@ export default function SevillaBarriosMap({
     // `zIndex: 0` crea un stacking context aislado: los z-index internos de
     // Leaflet (panes 400-500, info panel 1000) quedan contenidos en este
     // contenedor y no pueden pintar por encima del header sticky (z-40).
-    <div className={className} style={{ position: "relative", zIndex: 0, height, width: "100%" }}>
+    <div className={className} style={{ position: "relative", zIndex: 0, height: height ?? "100%", width: "100%" }}>
+      <style>{`
+        /* Eliminar el borde/cuadro negro de foco al hacer clic en los polígonos */
+        .leaflet-container path,
+        .leaflet-container path:focus,
+        .leaflet-container path:focus-visible,
+        .leaflet-interactive,
+        .leaflet-interactive:focus,
+        .leaflet-interactive:focus-visible {
+          outline: none !important;
+          box-shadow: none !important;
+        }
+        .custom-barrio-popup .leaflet-popup-content-wrapper {
+          background: #ffffff;
+          border-radius: 16px;
+          padding: 4px;
+          box-shadow: 0 15px 30px -5px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(15, 23, 42, 0.08);
+        }
+        .custom-barrio-popup .leaflet-popup-content {
+          margin: 6px 8px;
+          line-height: 1.4;
+        }
+        .custom-barrio-popup .leaflet-popup-tip-container {
+          width: 24px;
+          height: 12px;
+        }
+        .custom-barrio-popup .leaflet-popup-tip {
+          background: #ffffff;
+        }
+        .custom-barrio-popup a.leaflet-popup-close-button {
+          top: 8px;
+          right: 8px;
+          color: #94a3b8;
+          font-size: 18px;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 9999px;
+          transition: all 0.15s ease;
+        }
+        .custom-barrio-popup a.leaflet-popup-close-button:hover {
+          color: #0f172a;
+          background-color: #f1f5f9;
+        }
+        .leaflet-container a.barrio-ver-mas-btn,
+        .barrio-ver-mas-btn {
+          display: block;
+          width: 100%;
+          background-color: #facc15;
+          color: #000000 !important;
+          font-weight: 800;
+          font-size: 0.95rem;
+          padding: 10px 18px;
+          border-radius: 12px;
+          text-decoration: none;
+          box-shadow: 0 4px 12px rgba(250, 204, 21, 0.4);
+          transition: all 0.15s ease;
+          box-sizing: border-box;
+          text-align: center;
+          cursor: pointer;
+        }
+        .leaflet-container a.barrio-ver-mas-btn:hover,
+        .barrio-ver-mas-btn:hover {
+          background-color: #eab308 !important;
+          color: #000000 !important;
+          transform: translateY(-1px);
+          box-shadow: 0 6px 16px rgba(250, 204, 21, 0.55) !important;
+        }
+        .barrio-ver-mas-btn:active {
+          transform: translateY(0);
+        }
+      `}</style>
       <div ref={containerRef} style={{ height: "100%", width: "100%", cursor: "pointer", backgroundColor: "#0f172a" }} />
 
-      {/* Info Floating Panel */}
-      <div
-        aria-live="polite"
-        style={{
-          position: "absolute",
-          top: 12,
-          right: 12,
-          zIndex: 1000,
-          maxWidth: "min(320px, 65%)",
-          padding: "10px 16px",
-          borderRadius: 12,
-          background: "rgba(255, 255, 255, 0.95)",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
-          fontFamily: "system-ui, sans-serif",
-          pointerEvents: "none",
-        }}
-      >
-        {status === "loading" && <span className="text-xs text-gray-600 font-semibold">Cargando mapa de Sevilla…</span>}
-        {status === "error" && <span className="text-xs text-red-600 font-semibold">Error: {errorMsg}</span>}
-        {status === "empty" && <span className="text-xs text-gray-500 font-semibold">Aún no hay barrios con área definida</span>}
-        {status === "ready" && (
-          info ? (
-            <div className="space-y-0.5">
-              <div className="font-extrabold text-gray-900 text-sm">{info.name}</div>
-              <div className="text-xs font-semibold text-gray-600">
-                {info.negocios} {info.negocios === 1 ? 'negocio registrado' : 'negocios registrados'}
-              </div>
-              <div className="text-[11px] font-bold text-amber-700 pt-0.5">
-                Haz clic para explorar el barrio →
-              </div>
-            </div>
-          ) : (
-            <span className="text-xs font-semibold text-gray-500">Pasa el ratón o haz clic sobre un barrio</span>
-          )
-        )}
-      </div>
+      {/* Status Notification - only shown on loading/error/empty */}
+      {status !== "ready" && (
+        <div
+          aria-live="polite"
+          style={{
+            position: "absolute",
+            top: 12,
+            right: 12,
+            zIndex: 1000,
+            maxWidth: "min(320px, 65%)",
+            padding: "10px 16px",
+            borderRadius: 12,
+            background: "rgba(255, 255, 255, 0.95)",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+            fontFamily: "system-ui, sans-serif",
+            pointerEvents: "none",
+          }}
+        >
+          {status === "loading" && <span className="text-xs text-gray-600 font-semibold">Cargando mapa de Sevilla…</span>}
+          {status === "error" && <span className="text-xs text-red-600 font-semibold">Error: {errorMsg}</span>}
+          {status === "empty" && <span className="text-xs text-gray-500 font-semibold">Aún no hay barrios con área definida</span>}
+        </div>
+      )}
     </div>
   );
 }

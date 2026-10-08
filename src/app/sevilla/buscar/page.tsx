@@ -92,12 +92,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-10">
       {/* Search Header */}
-      <div className="bg-amber-50/70 border border-amber-200/70 rounded-3xl p-8 text-center space-y-6">
-        <h1 className="text-3xl font-extrabold text-gray-900 flex items-center justify-center gap-2">
-          <Search className="w-7 h-7 text-sevilla-carmesi" />
-          Buscador de Negocios en Sevilla
+      <div className="py-8 text-center space-y-4">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">
+          Buscar en Sevilla
         </h1>
-
         <div className="max-w-2xl mx-auto">
           <SearchBar placeholder="Escribe el nombre del negocio, tipo de servicio o barrio..." />
         </div>
@@ -106,11 +104,8 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       {/* Results Header */}
       {query && (
         <div className="border-b border-gray-200 pb-4 flex items-center justify-between flex-wrap gap-2">
-          <h2 className="text-lg font-bold text-gray-800">
-            Resultados para &quot;<span className="text-sevilla-carmesi">{query}</span>&quot;
-          </h2>
-          <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-            {totalFound} resultado(s) encontrado(s)
+          <span className="text-xs font-bold text-gray-700 px-3.5 py-1.5 rounded-full">
+            {totalFound} resultado{totalFound === 1 ? '' : 's'} encontrado{totalFound === 1 ? '' : 's'}
           </span>
         </div>
       )}
@@ -127,7 +122,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
       ) : totalFound === 0 ? (
         <div className="bg-white rounded-2xl p-10 text-center border border-gray-200 space-y-3">
           <Search className="w-10 h-10 text-gray-400 mx-auto" />
-          <h3 className="font-bold text-gray-800">No se encontraron resultados para &quot;{query}&quot;</h3>
+          <h3 className="font-bold text-gray-800">No se encontraron resultados</h3>
           <p className="text-xs text-gray-500">
             Prueba a revisar la ortografía o intenta buscar un término más general.
           </p>
@@ -147,7 +142,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
             <div className="space-y-4">
               <h3 className="text-xl font-extrabold text-gray-900 flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-sevilla-carmesi" />
-                Barrios coincidentes ({barrios.length})
+                Barrios ({barrios.length})
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {barrios.map((b) => (
@@ -187,11 +182,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                     className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md hover:border-sevilla-carmesi transition-all flex flex-col justify-between group space-y-4"
                   >
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-sevilla-carmesi bg-amber-50 px-2.5 py-0.5 rounded-md border border-amber-200">
-                          {negocio.barrio.nombre}
-                        </span>
-                      </div>
+                      <p className="text-xs font-medium text-gray-400 flex items-center gap-1">
+                        <MapPin className="w-3 h-3" />
+                        {negocio.barrio.nombre}
+                      </p>
 
                       <h4 className="font-extrabold text-lg text-gray-900 group-hover:text-sevilla-carmesi transition-colors">
                         {negocio.nombre}

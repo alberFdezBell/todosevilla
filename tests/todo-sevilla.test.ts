@@ -166,4 +166,106 @@ describe('Todo Sevilla - Core Logic & Business Rules Unit Tests', () => {
       expect(res.isValid).toBe(true)
     })
   })
+
+  // 6. GeoJSON Import & Spatial Collision Detection Tests
+  describe('GeoJSON Import & Collision Detection', () => {
+    it('should detect spatial collision when a new area overlaps an existing area', async () => {
+      const booleanIntersects = (await import('@turf/boolean-intersects')).default
+
+      const existingPoly = {
+        type: 'Feature' as const,
+        geometry: {
+          type: 'Polygon' as const,
+          coordinates: [
+            [
+              [-6.0, 37.38],
+              [-5.98, 37.38],
+              [-5.98, 37.4],
+              [-6.0, 37.4],
+              [-6.0, 37.38],
+            ],
+          ],
+        },
+        properties: { nombre: 'Triana' },
+      }
+
+      const overlappingPoly = {
+        type: 'Feature' as const,
+        geometry: {
+          type: 'Polygon' as const,
+          coordinates: [
+            [
+              [-5.99, 37.39],
+              [-5.97, 37.39],
+              [-5.97, 37.41],
+              [-5.99, 37.41],
+              [-5.99, 37.39],
+            ],
+          ],
+        },
+        properties: { nombre: 'Nuevo Barrio Solapado' },
+      }
+
+      const nonOverlappingPoly = {
+        type: 'Feature' as const,
+        geometry: {
+          type: 'Polygon' as const,
+          coordinates: [
+            [
+              [-5.8, 37.1],
+              [-5.7, 37.1],
+              [-5.7, 37.2],
+              [-5.8, 37.2],
+              [-5.8, 37.1],
+            ],
+          ],
+        },
+        properties: { nombre: 'Barrio Lejano' },
+      }
+
+      expect(booleanIntersects(overlappingPoly, existingPoly)).toBe(true)
+      expect(booleanIntersects(nonOverlappingPoly, existingPoly)).toBe(false)
+    })
+  })
+
+  // 7. GeoJSON Polygon Simplification & Vertex Counting Tests
+  describe('GeoJSON Polygon Simplification & Vertex Counting', () => {
+    const multiPointPoly = {
+      type: 'Feature' as const,
+      geometry: {
+        type: 'Polygon' as const,
+        coordinates: [
+          [
+            [-6.0, 37.38],
+            [-5.999, 37.3801],
+            [-5.998, 37.3802],
+            [-5.98, 37.38],
+            [-5.98, 37.4],
+            [-5.99, 37.4001],
+            [-6.0, 37.4],
+            [-6.0, 37.38],
+          ],
+        ],
+      },
+      properties: { nombre: 'Polígono Complejo' },
+    }
+
+    it('should count vertices correctly', async () => {
+      const { countGeoJsonVertices } = await import('@/lib/geo-utils')
+      expect(countGeoJsonVertices(multiPointPoly)).toBe(8)
+    })
+
+    it('should reduce vertex count when simplify is applied', async () => {
+      const { simplify } = await import('@turf/turf')
+      const { countGeoJsonVertices } = await import('@/lib/geo-utils')
+
+      const initialCount = countGeoJsonVertices(multiPointPoly)
+      const simplified = simplify(multiPointPoly, { tolerance: 0.001, highQuality: true })
+      const simplifiedCount = countGeoJsonVertices(simplified)
+
+      expect(simplifiedCount).toBeLessThan(initialCount)
+      expect(simplifiedCount).toBeGreaterThanOrEqual(4)
+    })
+  })
 })
+
